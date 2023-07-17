@@ -96,7 +96,7 @@ previousTime = None
 
 currentTime = 0
 
-def main(X, Y, R):
+def main(X = 0, Y = 0, R = 0):
 
     setup()
 
@@ -727,18 +727,21 @@ class MyController(Controller):
         self.left_stick_y_down = value
         y_down_result = map_input(self.left_stick_y_up, -32767, 32767, -127, 127)
         commandedX = y_down_result
+        main(commandedX, commandedY, commandedR)
 
     def on_L3_left(self, value):
         global commandedY
         self.left_stick_x_left = value
         l3_x_left_result = map_input(self.left_stick_x_left, -32767, 32767, -127, 127)
         commandedY = l3_x_left_result
+        main(commandedX, commandedY, commandedR)
 
     def on_L3_right(self, value):
         global commandedY
         self.left_stick_x_right = value
         l3_x_right_result = map_input(self.left_stick_x_right, -32767, 32767, -127, 127)
         commandedY = l3_x_right_result
+        main(commandedX, commandedY, commandedR)
 
     #ROTATIONAL CONTROLS
     def on_R3_left(self, value):
@@ -746,12 +749,14 @@ class MyController(Controller):
         self.right_stick_x_left = value
         r3_x_left_result = map_input(self.right_stick_x_left, -32767, 32767, -127, 127)
         commandedR = r3_x_left_result
+        main(commandedX, commandedY, commandedR)
 
     def on_R3_right(self, value):
         global commandedR
         self.right_stick_x_right = value
         r3_x_right_result = map_input(self.right_stick_x_right, -32767, 32767, -127, 127)
         commandedR = r3_x_right_result
+        main(commandedX, commandedY, commandedR)
 
 
 if __name__ == '__main__':
