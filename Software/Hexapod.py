@@ -100,77 +100,22 @@ def main(X = 0, Y = 0, R = 0):
 
     setup()
 
-    global BATT_VOLTAGE
-    global RAD_TO_DEG
-    global COXA_LENGTH
-    global FEMUR_LENGTH
-    global TIBIA_LENGTH
     global FRAME_TIME_MS
     global HOME_X
     global HOME_Y
-    global HOME_Z
-    global BODY_X
-    global BODY_Y
-    global BODY_Z
-    global COXA_CAL
-    global FEMUR_CAL
-    global TIBIA_CAL
-    global MIN_PULSE
-    global MAX_PULSE
-    global nbPCAServo
-    global temp                           
+    global HOME_Z                          
     global mode
     global gait
-    global gait_speed
-    global L0                         
-    global L3
-    global gamma_femur
-    global phi_tibia
-    global phi_femur
-    global theta_tibia
-    global theta_femur
-    global theta_coxa
     global leg_num 
-    global z_height_LED_color
-    global totalX
-    global totalY
-    global totalZ
-    global tick
-    global duration
-    global numTicks
-    global z_height_left
-    global z_height_right
-    global commandedX
-    global commandedY
-    global commandedR
-    global step_height_multiplier
-    global strideX
-    global strideY
-    global strideR
-    global sinRotX
-    global sinRotY
-    global sinRotZ
-    global cosRotX
-    global cosRotY
-    global cosRotZ
-    global rotOffsetX
-    global rotOffsetY
-    global rotOffsetZ
-    global amplitudeX
-    global amplitudeY
-    global amplitudeZ
     global offset_X
     global offset_Y
     global offset_Z
     global current_X
     global current_Y
     global current_Z
-    global capture_offsets
     global leg1_IK_control
     global leg6_IK_control
     global reset_position
-    global tripod_case
-    global gamepad_error
     global previousTime
     global currentTime
 
@@ -241,28 +186,18 @@ def map_input(input_value, input_min, input_max, output_min, output_max):
 
 # Leg IK Routine
 def leg_IK(leg_number, X, Y, Z):
-    global BATT_VOLTAGE
+
     global RAD_TO_DEG
     global COXA_LENGTH
     global FEMUR_LENGTH
     global TIBIA_LENGTH
     global FRAME_TIME_MS
-    global HOME_X
-    global HOME_Y
-    global HOME_Z
-    global BODY_X
-    global BODY_Y
-    global BODY_Z
     global COXA_CAL
     global FEMUR_CAL
     global TIBIA_CAL
     global MIN_PULSE
     global MAX_PULSE
-    global nbPCAServo
-    global temp                           
-    global mode
-    global gait
-    global gait_speed
+    global nbPCAServo                          
     global L0                         
     global L3
     global gamma_femur
@@ -271,49 +206,8 @@ def leg_IK(leg_number, X, Y, Z):
     global theta_tibia
     global theta_femur
     global theta_coxa
-    global leg_num 
-    global z_height_LED_color
-    global totalX
-    global totalY
-    global totalZ
-    global tick
-    global duration
-    global numTicks
-    global z_height_left
-    global z_height_right
-    global commandedX
-    global commandedY
-    global commandedR
-    global step_height_multiplier
-    global strideX
-    global strideY
-    global strideR
-    global sinRotX
-    global sinRotY
-    global sinRotZ
-    global cosRotX
-    global cosRotY
-    global cosRotZ
-    global rotOffsetX
-    global rotOffsetY
-    global rotOffsetZ
-    global amplitudeX
-    global amplitudeY
-    global amplitudeZ
-    global offset_X
-    global offset_Y
-    global offset_Z
-    global current_X
-    global current_Y
-    global current_Z
-    global capture_offsets
-    global leg1_IK_control
     global leg6_IK_control
-    global reset_position
-    global tripod_case
-    global gamepad_error
-    global previousTime
-    global currentTime
+
     # compute target femur-to-toe (L3) length
     L0 = math.sqrt(X**2 + Y**2) - COXA_LENGTH
     L3 = math.sqrt(L0**2 + Z**2)
@@ -396,74 +290,20 @@ def tripod_gait():
     global commandedY
     global commandedR
     global RAD_TO_DEG
-    global COXA_LENGTH
-    global FEMUR_LENGTH
-    global TIBIA_LENGTH
     global FRAME_TIME_MS
     global HOME_X
     global HOME_Y
     global HOME_Z
-    global BODY_X
-    global BODY_Y
-    global BODY_Z
-    global COXA_CAL
-    global FEMUR_CAL
-    global TIBIA_CAL
-    global MIN_PULSE
-    global MAX_PULSE
-    global nbPCAServo
-    global temp                           
-    global mode
-    global gait
-    global gait_speed
-    global L0                         
-    global L3
-    global gamma_femur
-    global phi_tibia
-    global phi_femur
-    global theta_tibia
-    global theta_femur
-    global theta_coxa
-    global leg_num 
-    global z_height_LED_color
-    global totalX
-    global totalY
-    global totalZ
     global tick
     global duration
     global numTicks
-    global z_height_left
-    global z_height_right
-    global step_height_multiplier
-    global strideX
-    global strideY
-    global strideR
-    global sinRotX
-    global sinRotY
-    global sinRotZ
-    global cosRotX
-    global cosRotY
-    global cosRotZ
-    global rotOffsetX
-    global rotOffsetY
-    global rotOffsetZ
     global amplitudeX
     global amplitudeY
     global amplitudeZ
-    global offset_X
-    global offset_Y
-    global offset_Z
     global current_X
     global current_Y
     global current_Z
-    global capture_offsets
-    global leg1_IK_control
-    global leg6_IK_control
-    global reset_position
     global tripod_case
-    global gamepad_error
-    global previousTime
-    global currentTime
 
     # If commands are more than the deadband, then process
     if (abs(commandedX) > 15) or (abs(commandedY) > 15) or (abs(commandedR) > 15) or (tick > 0):
