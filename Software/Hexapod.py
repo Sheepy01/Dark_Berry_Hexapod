@@ -1,6 +1,4 @@
 
-
-
 import math
 from math import sin, cos, tanh, tan, radians, pi
 from adafruit_servokit import ServoKit
@@ -163,10 +161,9 @@ def main(X = 0, Y = 0, R = 0):
 
             # Position legs using IK calculations unless set all to 90 degrees mode
             if mode < 99:
-                for leg_num in range(6):
+                for leg_num in range(0, 6):
                     print(leg_num)
                     leg_IK(leg_num, current_X[leg_num] + offset_X[leg_num], current_Y[leg_num] + offset_Y[leg_num], current_Z[leg_num] + offset_Z[leg_num])
-                    print(leg_num)
 
             # Reset leg lift first pass flags if needed
             if mode != 4:
@@ -235,6 +232,8 @@ def leg_IK(leg_number, X, Y, Z):
                 kit.servo[0].angle = theta_coxa
                 kit.servo[1].angle = theta_femur
                 kit.servo[2].angle = theta_tibia
+    
+    tripod_gait()
         # elif leg_number == 1:
         #     theta_coxa += 90.0  # compensate for leg mounting
         #     theta_coxa = max(min(theta_coxa, 180.0), 0.0)
@@ -310,7 +309,7 @@ def tripod_gait():
         compute_strides()
         numTicks = round(duration / FRAME_TIME_MS / 2.0)  # Total ticks divided into the two cases
         for leg_num in range(6):
-            compute_amplitudes()
+            compute_amplitudes(leg_num)
             if tripod_case[leg_num] == 1:  # Move foot forward (raise and lower)
                 current_X[leg_num] = HOME_X[leg_num] - amplitudeX * cos(pi * tick / numTicks)
                 current_Y[leg_num] = HOME_Y[leg_num] - amplitudeY * cos(pi * tick / numTicks)
@@ -371,7 +370,7 @@ def compute_strides():
 # //***********************************************************************
 # // Compute walking amplitudes
 # //***********************************************************************
-def compute_amplitudes():
+def compute_amplitudes(leg_num):
     global totalX
     global totalY
     global rotOffsetX
