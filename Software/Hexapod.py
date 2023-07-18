@@ -102,7 +102,7 @@ tripod_case = [1, 2, 1, 2, 1, 2]     # for tripod gait walking
 
 gamepad_error = 0
 
-previousTime = None
+previousTime = 0
 
 currentTime = 0
 
@@ -131,15 +131,16 @@ def main(X = 0, Y = 0, R = 0):
 
     running = True
     while running:
+        global previousTime
         # if (abs(X) > 15) or (abs(Y) > 15) or (abs(R) > 15) or (tick > 0):
         #     print(abs(X), abs(Y), abs(R))
         # else:
         #     running = False
         if (abs(X) > 15) or (abs(Y) > 15) or (abs(R) > 15) or (tick > 0):
             
-            if previousTime is None:
-                previousTime = int(round(time.time() *1000))
-            currentTime = int(round(time.time() * 1000))
+            # if previousTime is None:
+            #     previousTime = int(round(time.time() *1000))
+            # currentTime = int(round(time.time() * 1000))
             # Rest of your code
 
 
@@ -162,7 +163,6 @@ def main(X = 0, Y = 0, R = 0):
             # Position legs using IK calculations unless set all to 90 degrees mode
             if mode < 99:
                 for leg_num in range(0, 6):
-                    print(leg_num)
                     leg_IK(leg_num, current_X[leg_num] + offset_X[leg_num], current_Y[leg_num] + offset_Y[leg_num], current_Z[leg_num] + offset_Z[leg_num])
 
             # Reset leg lift first pass flags if needed
@@ -233,7 +233,7 @@ def leg_IK(leg_number, X, Y, Z):
                 kit.servo[1].angle = theta_femur
                 kit.servo[2].angle = theta_tibia
     
-    tripod_gait()
+    # tripod_gait()
         # elif leg_number == 1:
         #     theta_coxa += 90.0  # compensate for leg mounting
         #     theta_coxa = max(min(theta_coxa, 180.0), 0.0)
@@ -282,6 +282,8 @@ def leg_IK(leg_number, X, Y, Z):
 
 
 def tripod_gait():
+
+    # time.sleep(0.01)
 
     print("inside tripod gait")
 
@@ -349,17 +351,17 @@ def compute_strides():
     global duration
     # Compute stride lengths
     strideX = 90 * commandedX / 12
-    print(strideX)
+    # print(strideX)
     strideY = 90 * commandedY / 12
-    print(strideY)
+    # print(strideY)
     strideR = 35 * commandedR / 12
-    print(strideR)
+    # print(strideR)
 
     # Compute rotation trig
     sinRotZ = sin(radians(strideR))
-    print(sinRotZ)
+    # print(sinRotZ)
     cosRotZ = cos(radians(strideR))
-    print(cosRotZ)
+    # print(cosRotZ)
 
     # Set duration for normal and slow speed modes
     if gait_speed == 0:
@@ -395,17 +397,17 @@ def compute_amplitudes(leg_num):
     amplitudeX = ((strideX + rotOffsetX) / 2.0)
     amplitudeY = ((strideY + rotOffsetY) / 2.0)
     amplitudeX = constrain(amplitudeX, -50, 50)
-    print(amplitudeX)
+    # print(amplitudeX)
     amplitudeY = constrain(amplitudeY, -50, 50)
-    print(amplitudeY)
+    # print(amplitudeY)
 
     # Compute Z amplitude
     if abs(strideX + rotOffsetX) > abs(strideY + rotOffsetY):
         amplitudeZ = step_height_multiplier * (strideX + rotOffsetX) / 4.0
-        print(amplitudeZ)
+        # print(amplitudeZ)
     else:
         amplitudeZ = step_height_multiplier * (strideY + rotOffsetY) / 4.0
-        print(amplitudeZ)	
+        # print(amplitudeZ)	
 		
 
 # INITIALIZATION
@@ -442,8 +444,8 @@ def setup():
     capture_offsets = False
     step_height_multiplier = 1.0
 
-    mode = 0
-    gait = 0
+    # mode = 0
+    # gait = 0
     gait_speed = 0
     reset_position = True
 
