@@ -1,4 +1,5 @@
 
+
 import math
 from math import sin, cos, tanh, tan, radians, pi
 from adafruit_servokit import ServoKit
@@ -7,14 +8,14 @@ import time
 
 kit = ServoKit(channels=16)
 
-DELAY = 2
-MIN_PULSE = 500
-MAX_PULSE = 2500
-nbPCAServo = 16
-for i in range(nbPCAServo):
-    kit.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
-    kit.servo[i].angle = 90
-time.sleep(DELAY)
+# DELAY = 2
+# MIN_PULSE = 500
+# MAX_PULSE = 2500
+# nbPCAServo = 16
+# for i in range(nbPCAServo):
+    # kit.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
+    # kit.servo[i].angle = 90
+# time.sleep(DELAY)
 
 #CONSTANTS
 BATT_VOLTAGE = 0  # 12V Battery analog voltage input port
@@ -28,7 +29,7 @@ FRAME_TIME_MS = 20  # frame time (20msec = 50Hz)
 
 HOME_X = [82.0, 0.0, -82.0, -82.0, 0.0, 82.0]  # coxa-to-toe home positions
 HOME_Y = [82.0, 116.0, 82.0, -82.0, -116.0, -82.0]
-HOME_Z = [-80.0, -80.0, -80.0, -80.0, -80.0, -80.0]
+HOME_Z = [-110.0, -110.0, -110.0, -110.0, -110.0, -110.0]
 
 BODY_X = [110.4, 0.0, -110.4, -110.4, 0.0, 110.4]  # body center-to-coxa servo distances
 BODY_Y = [58.4, 90.8, 58.4, -58.4, -90.8, -58.4]
@@ -211,7 +212,7 @@ def leg_IK(leg_number, X, Y, Z):
     if (L3 < (TIBIA_LENGTH + FEMUR_LENGTH)) and (L3 > (TIBIA_LENGTH - FEMUR_LENGTH)):
         # compute tibia angle
         phi_tibia = math.acos((FEMUR_LENGTH**2 + TIBIA_LENGTH**2 - L3**2) / (2 * FEMUR_LENGTH * TIBIA_LENGTH))
-        theta_tibia = phi_tibia * RAD_TO_DEG - 23.0 + TIBIA_CAL[leg_number]
+        theta_tibia = phi_tibia * RAD_TO_DEG + 23.0 + TIBIA_CAL[leg_number]
         theta_tibia = max(min(theta_tibia, 180.0), 0.0)
 
         # compute femur angle
@@ -223,7 +224,7 @@ def leg_IK(leg_number, X, Y, Z):
         # compute coxa angle
         theta_coxa = math.atan2(X, Y) * RAD_TO_DEG + COXA_CAL[leg_number]
 
-        # output to the appropriate leg
+        # # output to the appropriate leg
         if leg_number == 0:
             if leg1_IK_control:  # flag for IK or manual control of leg
                 theta_coxa += 45.0  # compensate for leg mounting
@@ -232,15 +233,13 @@ def leg_IK(leg_number, X, Y, Z):
                 kit.servo[0].angle = theta_coxa
                 kit.servo[1].angle = theta_femur
                 kit.servo[2].angle = theta_tibia
-    
-    # tripod_gait()
-        # elif leg_number == 1:
-        #     theta_coxa += 90.0  # compensate for leg mounting
-        #     theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-        #     print(theta_coxa, theta_femur, theta_tibia)
-        #     #kit.servo[COXA2_SERVO].angle = theta_coxa
-        #     #kit.servo[FEMUR2_SERVO].angle = theta_femur
-        #     #kit.servo[TIBIA2_SERVO].angle = theta_tibia
+        # if leg_number == 1:
+            # theta_coxa += 90.0  # compensate for leg mounting
+            # theta_coxa = max(min(theta_coxa, 180.0), 0.0)
+            # print(theta_coxa, theta_femur, theta_tibia)
+            # kit.servo[0].angle = theta_coxa
+            # kit.servo[1].angle = theta_femur
+            # kit.servo[2].angle = theta_tibia
         # elif leg_number == 2:
         #     theta_coxa += 135.0  # compensate for leg mounting
         #     theta_coxa = max(min(theta_coxa, 180.0), 0.0)
@@ -248,26 +247,26 @@ def leg_IK(leg_number, X, Y, Z):
         #     #kit.servo[COXA3_SERVO].angle = theta_coxa
         #     #kit.servo[FEMUR3_SERVO].angle = theta_femur
         #     #kit.servo[TIBIA3_SERVO].angle = theta_tibia
-        # elif leg_number == 3:
-        #     if theta_coxa < 0:  # compensate for leg mounting
-        #         theta_coxa += 225.0  # need to use different positive and negative offsets
-        #     else:
-        #         theta_coxa -= 135.0  # due to atan2 results above!
-        #     theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-        #     print(theta_coxa, theta_femur, theta_tibia)
-        #     #kit.servo[COXA4_SERVO].angle = theta_coxa
-        #     #kit.servo[FEMUR4_SERVO].angle = theta_femur
-        #     #kit.servo[TIBIA4_SERVO].angle = theta_tibia
-        # elif leg_number == 4:
-        #     if theta_coxa < 0:  # compensate for leg mounting
-        #         theta_coxa += 270.0  # need to use different positive and negative offsets
-        #     else:
-        #         theta_coxa -= 90.0  # due to atan2 results above!
-        #     theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-        #     print(theta_coxa, theta_femur, theta_tibia)
-        #     #kit.servo[COXA5_SERVO].angle = theta_coxa
-        #     #kit.servo[FEMUR5_SERVO].angle = theta_femur
-        #     #kit.servo[TIBIA5_SERVO].angle = theta_tibia
+        # if leg_number == 3:
+            # if theta_coxa < 0:  # compensate for leg mounting
+                # theta_coxa += 225.0  # need to use different positive and negative offsets
+            # else:
+                # theta_coxa -= 135.0  # due to atan2 results above!
+            # theta_coxa = max(min(theta_coxa, 180.0), 0.0)
+            # print(theta_coxa, theta_femur, theta_tibia)
+            # kit.servo[0].angle = theta_coxa
+            # kit.servo[1].angle = theta_femur
+            # kit.servo[2].angle = theta_tibia
+        # if leg_number == 4:
+            # if theta_coxa < 0:  # compensate for leg mounting
+                # theta_coxa += 270.0  # need to use different positive and negative offsets
+            # else:
+                # theta_coxa -= 90.0  # due to atan2 results above!
+            # theta_coxa = max(min(theta_coxa, 180.0), 0.0)
+            # print(theta_coxa, theta_femur, theta_tibia)
+            # kit.servo[0].angle = theta_coxa
+            # kit.servo[1].angle = theta_femur
+            # kit.servo[2].angle = theta_tibia
         # elif leg_number == 5:
         #     if leg6_IK_control:  # flag for IK or manual control of leg
         #         if theta_coxa < 0:  # compensate for leg mounting
@@ -283,9 +282,7 @@ def leg_IK(leg_number, X, Y, Z):
 
 def tripod_gait():
 
-    # time.sleep(0.01)
-
-    print("inside tripod gait")
+    time.sleep(0.015)
 
     global commandedX
     global commandedY
@@ -365,9 +362,9 @@ def compute_strides():
 
     # Set duration for normal and slow speed modes
     if gait_speed == 0:
-        duration = 1080
+        duration = 720
     else:
-        duration = 3240
+        duration = 2160
 
 # //***********************************************************************
 # // Compute walking amplitudes
@@ -424,6 +421,9 @@ def setup():
     global gait
     global gait_speed
     global reset_position
+    global leg1_IK_control
+    global leg6_IK_control
+
     #INITIALIZE PCA9685
     # kit = ServoKit(channels=16)
     # for i in range(nbPCAServo):
@@ -442,12 +442,14 @@ def setup():
         offset_Z[leg_num] = 0.0
 
     capture_offsets = False
-    step_height_multiplier = 1.0
+    step_height_multiplier = 2.0
 
-    # mode = 0
-    # gait = 0
+    #mode = 0
+    #gait = 0
     gait_speed = 0
     reset_position = True
+    leg1_IK_control = True
+    leg6_IK_control = True
 
 #INITIALIZE CONTROLLER
 class MyController(Controller):
@@ -615,3 +617,4 @@ class MyController(Controller):
 if __name__ == '__main__':
     controller = MyController(interface="/dev/input/js0", connecting_using_ds4drv=False)
     controller.listen()
+
