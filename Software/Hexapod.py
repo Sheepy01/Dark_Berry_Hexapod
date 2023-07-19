@@ -108,10 +108,10 @@ previousTime = 0
 currentTime = 0
 
 def main():
+    setup()
     
     while True:
 
-        setup()
 
         process_gamepad()
 
@@ -253,122 +253,108 @@ def process_gamepad():
     R_STICK_X_AXIS = 3
     R_STICK_Y_AXIS = 4
 
-    pygame.init()
-    pygame.joystick.init()
-        
-    if(pygame.joystick.get_count() == 0):
-        print("No controller connected!")
-        quit()
+    for event in pygame.event.get():
 
-    joystick_count = pygame.joystick.get_count()
-    for i in range(joystick_count):
-        joystick = pygame.joystick.Joystick(i)
-        joystick.init()
-        print("Joystick", i + 1, ":", joystick.get_name())
+        if event.type == pygame.JOYBUTTONDOWN:
+            button_id = event.button
+            button_name = pygame.joystick.Joystick(0).get_button(button_id)
+            print(f"Button {button_id} ({button_name}) pressed")
 
-    while True:
-        for event in pygame.event.get():
+        if event.type == pygame.JOYHATMOTION:
+            if event.value == DPAD_UP:
+                mode = 0
+                gait = 2
+                reset_position = True
+                print(f"Mode: {mode}")
+                print(f"Gait: {gait}")
 
-            if event.type == pygame.JOYBUTTONDOWN:
-                button_id = event.button
-                button_name = pygame.joystick.Joystick(0).get_button(button_id)
-                print(f"Button {button_id} ({button_name}) pressed")
+            if event.value == DPAD_DOWN:
+                mode = 0
+                gait = 0
+                reset_position = True
+                print(f"Mode: {mode}")
+                print(f"Gait: {gait}")
 
-            if event.type == pygame.JOYHATMOTION:
-                if event.value == DPAD_UP:
-                    mode = 0
-                    gait = 2
-                    reset_position = True
-                    print(f"Mode: {mode}")
-                    print(f"Gait: {gait}")
+            if event.value == DPAD_LEFT:
+                mode = 0
+                gait = 1
+                reset_position = True
+                print(f"Mode: {mode}")
+                print(f"Gait: {gait}")
 
-                if event.value == DPAD_DOWN:
-                    mode = 0
-                    gait = 0
-                    reset_position = True
-                    print(f"Mode: {mode}")
-                    print(f"Gait: {gait}")
+            if event.value == DPAD_RIGHT:
+                mode = 0
+                gait = 3
+                reset_position = True
+                print(f"Mode: {mode}")
+                print(f"Gait: {gait}")
 
-                if event.value == DPAD_LEFT:
-                    mode = 0
-                    gait = 1
-                    reset_position = True
-                    print(f"Mode: {mode}")
-                    print(f"Gait: {gait}")
+        if event.type == pygame.JOYAXISMOTION:
+            # Left Joystick X Axis
+            if event.axis == L_STICK_X_AXIS:
+                L3_x = event.value
+                L3_x_result = map_input(L3_x, left_joystick_x_max, left_joystick_x_min, -127, 127)
+                commandedY = L3_x_result
 
-                if event.value == DPAD_RIGHT:
-                    mode = 0
-                    gait = 3
-                    reset_position = True
-                    print(f"Mode: {mode}")
-                    print(f"Gait: {gait}")
+            # Left Joystick Y Axis
+            elif event.axis == L_STICK_Y_AXIS:
+                L3_y = event.value
+                L3_y_result = map_input(L3_y, left_joystick_y_max, left_joystick_y_min, -127, 127)
+                commandedX = L3_y_result
 
-            if event.type == pygame.JOYAXISMOTION:
-                # Left Joystick X Axis
-                if event.axis == L_STICK_X_AXIS:
-                    L3_x = event.value
-                    L3_x_result = map_input(L3_x, left_joystick_x_max, left_joystick_x_min, -127, 127)
-                    commandedY = L3_x_result
+            # Right Joystick X Axis
+            if event.axis == R_STICK_X_AXIS:
+                R3_x = event.value
+                R3_x_result = map_input(R3_x, right_joystick_x_max, right_joystick_x_min, -127, 127)
+                commandedR = R3_x_result
 
-                # Left Joystick Y Axis
-                elif event.axis == L_STICK_Y_AXIS:
-                    L3_y = event.value
-                    L3_y_result = map_input(L3_y, left_joystick_y_max, left_joystick_y_min, -127, 127)
-                    commandedX = L3_y_result
+            # Right Joystick Y Axis
+            elif event.axis == R_STICK_Y_AXIS:
+                R3_y = event.value
+                R3_y_result = map_input(R3_y, right_joystick_y_max, right_joystick_y_min, -127, 127)
+                commandedR = R3_y_result
 
-                # Right Joystick X Axis
-                if event.axis == R_STICK_X_AXIS:
-                    R3_x = event.value
-                    R3_x_result = map_input(R3_x, right_joystick_x_max, right_joystick_x_min, -127, 127)
-                    commandedR = R3_x_result
+        if event.type == pygame.JOYBUTTONDOWN:
+            if event.button == BUTTON_TRIANGLE:
+                mode = 1
+                reset_position = True
+                print(f"Mode: {mode}")
 
-                # Right Joystick Y Axis
-                elif event.axis == R_STICK_Y_AXIS:
-                    R3_y = event.value
-                    R3_y_result = map_input(R3_y, right_joystick_y_max, right_joystick_y_min, -127, 127)
-                    commandedR = R3_y_result
+            if event.button == BUTTON_SQUARE:
+                mode = 2
+                reset_position = True
+                print(f"Mode: {mode}")
 
-            if event.type == pygame.JOYBUTTONDOWN:
-                if event.button == BUTTON_TRIANGLE:
-                    mode = 1
-                    reset_position = True
-                    print(f"Mode: {mode}")
+            if event.button == BUTTON_CIRCLE:
+                mode = 3
+                reset_position = True
+                print(f"Mode: {mode}")
 
-                if event.button == BUTTON_SQUARE:
-                    mode = 2
-                    reset_position = True
-                    print(f"Mode: {mode}")
+            if event.button == BUTTON_X:
+                mode = 4
+                reset_position = True
+                print(f"Mode: {mode}")
 
-                if event.button == BUTTON_CIRCLE:
-                    mode = 3
-                    reset_position = True
-                    print(f"Mode: {mode}")
-
-                if event.button == BUTTON_X:
-                    mode = 4
-                    reset_position = True
-                    print(f"Mode: {mode}")
-
-                if event.button == BUTTON_SHARE:
-                    print("BUTTON_SHARE")
-                if event.button == PS_BUTTON:
-                    print("PS_BUTTON")
-                if event.button == OPTIONS_BUTTON:
-                    print("OPTIONS_BUTTON")
-                if event.button == L2_IN:
-                    print("L_3_IN")
-                if event.button == R2_IN:
-                    print("R_3_IN")
-                if event.button == L_STICK_IN:
-                    print("L_STICK_IN")
-                if event.button == R_STICK_IN:
-                    print("R_STICK_IN")
-                if event.button == L1_IN:
-                    print("LEFT_BUMPER")
-                if event.button == R2_IN:
-                    print("RIGHT_BUMPER")
-                if event.button == TOUCH_PAD_CLICK_BUTTON:
-                    print("TOUCH_PAD_CLICK_BUTTON")
+            if event.button == BUTTON_SHARE:
+                print("BUTTON_SHARE")
+            if event.button == PS_BUTTON:
+                print("PS_BUTTON")
+            if event.button == OPTIONS_BUTTON:
+                print("OPTIONS_BUTTON")
+            if event.button == L2_IN:
+                print("L_3_IN")
+            if event.button == R2_IN:
+                print("R_3_IN")
+            if event.button == L_STICK_IN:
+                print("L_STICK_IN")
+            if event.button == R_STICK_IN:
+                print("R_STICK_IN")
+            if event.button == L1_IN:
+                print("LEFT_BUMPER")
+            if event.button == R2_IN:
+                print("RIGHT_BUMPER")
+            if event.button == TOUCH_PAD_CLICK_BUTTON:
+                print("TOUCH_PAD_CLICK_BUTTON")
 
 # Leg IK Routine
 def leg_IK(leg_number, X, Y, Z):
@@ -599,6 +585,24 @@ def setup():
     #     kit.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
     #     kit.servo[i].angle = 90
     #     time.sleep(2)
+
+    pygame.init()
+    pygame.joystick.init()
+        
+    if(pygame.joystick.get_count() == 0):
+        print("No controller connected!")
+        quit()
+
+    joystick_count = pygame.joystick.get_count()
+    for i in range(joystick_count):
+        joystick = pygame.joystick.Joystick(i)
+        joystick.init()
+        print("Joystick", i + 1, ":", joystick.get_name())
+    
+    if joystick_count > 0:
+        gamepad_error = 0
+    else:
+        gamepad_error = 1
 
     if gamepad_error == 0:
         print("Controller successfully connected")
