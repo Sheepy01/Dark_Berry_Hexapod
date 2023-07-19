@@ -1,21 +1,15 @@
 
-import pygame
-import math
-from math import sin, cos, tanh, tan, radians, pi
-from adafruit_servokit import ServoKit
-from pyPS4Controller.controller import Controller
+import sys
 import time
+import math
+import pygame
+import loading_animation as load
+from colorama import Fore, Style
+from adafruit_servokit import ServoKit
+from math import sin, cos, tanh, tan, radians, pi
+from pyPS4Controller.controller import Controller
 
 kit = ServoKit(channels=16)
-
-# DELAY = 2
-# MIN_PULSE = 500
-# MAX_PULSE = 2500
-# nbPCAServo = 16
-# for i in range(nbPCAServo):
-    # kit.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
-    # kit.servo[i].angle = 90
-# time.sleep(DELAY)
 
 #CONSTANTS
 BATT_VOLTAGE = 0  # 12V Battery analog voltage input port
@@ -107,7 +101,75 @@ previousTime = 0
 
 currentTime = 0
 
+# INITIALIZATION
+def setup():
+
+    global reset_position
+    global gamepad_error
+    global leg_num
+    global offset_X
+    global offset_Y
+    global offset_Z
+    global capture_offsets
+    global step_height_multiplier
+    global mode
+    global gait
+    global gait_speed
+    global reset_position
+    global leg1_IK_control
+    global leg6_IK_control
+
+    load.loading_screen()
+
+    #INITIALIZE PCA9685
+    kit = ServoKit(channels=16)
+    for i in range(nbPCAServo):
+        kit.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
+        kit.servo[i].angle = 90
+        time.sleep(2)
+
+    pygame.init()
+    pygame.joystick.init()
+        
+    if(pygame.joystick.get_count() == 0):
+        print("No controller connected!")
+        quit()
+
+    joystick_count = pygame.joystick.get_count()
+    for i in range(joystick_count):
+        joystick = pygame.joystick.Joystick(i)
+        joystick.init()
+        print("Joystick", i + 1, ":", joystick.get_name())
+    
+    if joystick_count > 0:
+        gamepad_error = 0
+    else:
+        gamepad_error = 1
+
+    if gamepad_error == 0:
+        print("Controller successfully connected")
+    else:
+        print("Controller not found")
+    
+    for leg_num in range(6):
+        offset_X[leg_num] = 0.0
+        offset_Y[leg_num] = 0.0
+        offset_Z[leg_num] = 0.0
+
+    capture_offsets = False
+    step_height_multiplier = 2.0
+
+    #mode = 0
+    #gait = 0
+    gait_speed = 0
+    reset_position = True
+    leg1_IK_control = True
+    leg6_IK_control = True
+
+
 def main():
+
+    #INTIALIZATION
     setup()
     
     while True:
@@ -544,69 +606,7 @@ def compute_amplitudes(leg_num):
     else:
         amplitudeZ = step_height_multiplier * (strideY + rotOffsetY) / 4.0
         # print(amplitudeZ)	
-		
 
-# INITIALIZATION
-def setup():
-    global reset_position
-    global gamepad_error
-    global leg_num
-    global offset_X
-    global offset_Y
-    global offset_Z
-    global capture_offsets
-    global step_height_multiplier
-    global mode
-    global gait
-    global gait_speed
-    global reset_position
-    global leg1_IK_control
-    global leg6_IK_control
-
-    #INITIALIZE PCA9685
-    kit = ServoKit(channels=16)
-    for i in range(nbPCAServo):
-        kit.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
-        kit.servo[i].angle = 90
-        time.sleep(2)
-
-    pygame.init()
-    pygame.joystick.init()
-        
-    if(pygame.joystick.get_count() == 0):
-        print("No controller connected!")
-        quit()
-
-    joystick_count = pygame.joystick.get_count()
-    for i in range(joystick_count):
-        joystick = pygame.joystick.Joystick(i)
-        joystick.init()
-        print("Joystick", i + 1, ":", joystick.get_name())
-    
-    if joystick_count > 0:
-        gamepad_error = 0
-    else:
-        gamepad_error = 1
-
-    if gamepad_error == 0:
-        print("Controller successfully connected")
-    else:
-        print("Controller not found")
-    
-    for leg_num in range(6):
-        offset_X[leg_num] = 0.0
-        offset_Y[leg_num] = 0.0
-        offset_Z[leg_num] = 0.0
-
-    capture_offsets = False
-    step_height_multiplier = 2.0
-
-    #mode = 0
-    #gait = 0
-    gait_speed = 0
-    reset_position = True
-    leg1_IK_control = True
-    leg6_IK_control = True
 
 
 if __name__ == '__main__':
