@@ -111,10 +111,6 @@ def main():
     setup()
     
     while True:
-
-
-        process_gamepad()
-
         global FRAME_TIME_MS
         global HOME_X
         global HOME_Y
@@ -134,25 +130,13 @@ def main():
         global previousTime
         global currentTime
         global previousTime
-        # if (abs(X) > 15) or (abs(Y) > 15) or (abs(R) > 15) or (tick > 0):
-        #     print(abs(X), abs(Y), abs(R))
-        # else:
-        #     running = False
-        # if (abs(X) > 15) or (abs(Y) > 15) or (abs(R) > 15) or (tick > 0):
-                
-        # if previousTime is None:
-        #     previousTime = int(round(time.time() *1000))
-        # currentTime = int(round(time.time() * 1000))
-        # Rest of your code
-
 
         currentTime = int(round(time.time() *1000))  # in milliseconds
         if currentTime - previousTime >FRAME_TIME_MS:
             previousTime = currentTime
 
         # Read controller and process inputs
-        # Replace this function call with your PS4controller input processing logic
-        # process_gamepad()
+        process_gamepad()
 
         # Reset legs to home position when commanded
         if reset_position:
@@ -342,16 +326,16 @@ def process_gamepad():
             if event.button == OPTIONS_BUTTON:
                 print("OPTIONS_BUTTON")
             if event.button == L2_IN:
-                print("L_3_IN")
+                print("L2_IN")
             if event.button == R2_IN:
-                print("R_3_IN")
+                print("R2_IN")
             if event.button == L_STICK_IN:
                 print("L_STICK_IN")
             if event.button == R_STICK_IN:
                 print("R_STICK_IN")
             if event.button == L1_IN:
                 print("LEFT_BUMPER")
-            if event.button == R2_IN:
+            if event.button == R1_IN:
                 print("RIGHT_BUMPER")
             if event.button == TOUCH_PAD_CLICK_BUTTON:
                 print("TOUCH_PAD_CLICK_BUTTON")
@@ -580,11 +564,11 @@ def setup():
     global leg6_IK_control
 
     #INITIALIZE PCA9685
-    # kit = ServoKit(channels=16)
-    # for i in range(nbPCAServo):
-    #     kit.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
-    #     kit.servo[i].angle = 90
-    #     time.sleep(2)
+    kit = ServoKit(channels=16)
+    for i in range(nbPCAServo):
+        kit.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
+        kit.servo[i].angle = 90
+        time.sleep(2)
 
     pygame.init()
     pygame.joystick.init()
@@ -624,171 +608,7 @@ def setup():
     leg1_IK_control = True
     leg6_IK_control = True
 
-# #INITIALIZE CONTROLLER
-# class MyController(Controller):
-
-#     global mode
-#     global gait
-#     global reset_position
-#     global gamepad_vibrate
-#     global gait_speed
-#     global capture_offsets
-#     global offset_X
-#     global offset_Y
-#     global offset_Z
-#     global leg1_IK_control
-#     global leg6_IK_control
-#     global step_height_multiplier
-
-#     def __init__(self, **kwargs):
-#         Controller.__init__(self, **kwargs)
-        
-#     def on_connect(self, controller_id):
-#         print(f"Controller {controller_id} connected")
-
-#     def on_disconnect(self, controller_id):
-#         print(f"Controller {controller_id} disconnected")
-        
-#     def on_down_arrow_press(self):
-#         global mode
-#         global gait
-#         global reset_position
-#         mode = 0
-#         gait = 0
-#         print(f"Gait_Mode: {gait}")
-#         reset_position = True
-
-#     def on_left_arrow_press(self):
-#         global mode
-#         global gait
-#         global reset_position
-#         mode = 0
-#         gait = 1
-#         print(f"Gait_Mode: {gait}")
-#         reset_position = True
-
-#     def on_up_arrow_press(self):
-#         global mode
-#         global gait
-#         global reset_position
-#         mode = 0
-#         gait = 2
-#         print(f"Gait_Mode: {gait}")
-#         reset_position = True
-
-#     def on_right_arrow_press(self):
-#         global mode
-#         global gait
-#         global reset_position
-#         mode = 0
-#         gait = 3
-#         print(f"Gait_Mode: {gait}")
-#         reset_position = True
-
-#     def on_triangle_press(self):
-#         global mode
-#         global reset_position
-#         mode = 1
-#         print(mode)
-#         reset_position = True
-
-#     def on_square_press(self):
-#         global mode
-#         global reset_position
-#         mode = 2
-#         print(f"Mode: {mode}")
-#         reset_position = True
-
-#     def on_circle_press(self):
-#         global mode
-#         global reset_position
-#         mode = 3
-#         print(f"Mode: {mode}")
-#         reset_position = True
-
-#     def on_x_press(self):
-#         global mode
-#         global reset_position
-#         mode = 4
-#         print(f"Mode: {mode}")
-#         reset_position = True
-
-#     def on_R2_press(self):
-#         global gait_speed
-#         if gait_speed == 0:
-#             gait_speed = 1
-#         else:
-#             gait_speed = 0
-    
-#     def on_L2_press(self):
-#         global offset_X
-#         global offset_Y
-#         global offset_Z
-#         global leg1_IK_control
-#         global leg6_IK_control
-#         global step_height_multiplier
-#         for leg_num in range(6):
-#             offset_X[leg_num] = 0;
-#             offset_Y[leg_num] = 0;
-#             offset_Z[leg_num] = 0;
-#         leg1_IK_control = True;               #reset leg lift first pass flags
-#         leg6_IK_control = True;
-#         step_height_multiplier = 1.0;
-
-#     def on_share_press(self):
-#         global mode
-#         mode = 99
-
-#     #FORWARD CONTROLS
-#     def on_L3_up(self, value):
-#         global commandedX
-#         self.left_stick_y_up = value
-#         y_up_result = map_input(self.left_stick_y_up, -32767, 32767, -127, 127)
-#         commandedX = y_up_result
-#         main(commandedX, commandedY, commandedR)
-
-#     def on_L3_down(self, value):
-#         global commandedX
-#         self.left_stick_y_down = value
-#         y_down_result = map_input(self.left_stick_y_up, -32767, 32767, -127, 127)
-#         commandedX = y_down_result
-#         main(commandedX, commandedY, commandedR)
-
-#     def on_l3_y_at_rest(self):
-#         main()
-
-#     def on_L3_left(self, value):
-#         global commandedY
-#         self.left_stick_x_left = value
-#         l3_x_left_result = map_input(self.left_stick_x_left, -32767, 32767, -127, 127)
-#         commandedY = l3_x_left_result
-#         main(commandedX, commandedY, commandedR)
-
-#     def on_L3_right(self, value):
-#         global commandedY
-#         self.left_stick_x_right = value
-#         l3_x_right_result = map_input(self.left_stick_x_right, -32767, 32767, -127, 127)
-#         commandedY = l3_x_right_result
-#         main(commandedX, commandedY, commandedR)
-
-#     #ROTATIONAL CONTROLS
-#     def on_R3_left(self, value):
-#         global commandedR
-#         self.right_stick_x_left = value
-#         r3_x_left_result = map_input(self.right_stick_x_left, -32767, 32767, -127, 127)
-#         commandedR = r3_x_left_result
-#         main(commandedX, commandedY, commandedR)
-
-#     def on_R3_right(self, value):
-#         global commandedR
-#         self.right_stick_x_right = value
-#         r3_x_right_result = map_input(self.right_stick_x_right, -32767, 32767, -127, 127)
-#         commandedR = r3_x_right_result
-#         main(commandedX, commandedY, commandedR)
-
 
 if __name__ == '__main__':
-    # controller = MyController(interface="/dev/input/js0", connecting_using_ds4drv=False)
-    # controller.listen()
     main()
 
