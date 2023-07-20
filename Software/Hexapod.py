@@ -607,6 +607,64 @@ def wave_gait():
 
 
 
+# //***********************************************************************
+# // Ripple Gait
+# // Left legs move forward rear-to-front while right also do the same,
+# // but right side is offset so RR starts midway through the LM stroke
+# //***********************************************************************
+def ripple_gait():
+    if abs(commandedX) > 50 or abs(commandedY) > 50 or abs(commandedR) > 50 or tick > 0:
+        compute_strides()
+        numTicks = round(duration / FRAME_TIME_MS / 6.0)
+        for leg_num in range(0, 6):
+            compute_amplitudes()
+            if ripple_case[leg_num] == 1:
+                current_X[leg_num] = HOME_X[leg_num] - amplitudeX * cos(pi * tick / (numTicks * 2))
+                current_Y[leg_num] = HOME_Y[leg_num] - amplitudeY * cos(pi * tick / (numTicks * 2))
+                current_Z[leg_num] = HOME_Z[leg_num] + abs(amplitudeZ) * sin(pi * tick / (numTicks * 2))
+                if tick >= numTicks - 1:
+                    ripple_case[leg_num] = 2
+            
+            elif ripple_case[leg_num] == 2:
+                current_X[leg_num] = HOME_X[leg_num] - amplitudeX * cos(pi * (numTicks + tick) / (numTicks * 2))
+                current_Y[leg_num] = HOME_Y[leg_num] - amplitudeY * cos(pi * (numTicks + tick) / (numTicks * 2))
+                current_Z[leg_num] = HOME_Z[leg_num] + abs(amplitudeZ) * sin(pi * (numTicks + tick) / (numTicks * 2))
+                if tick >= numTicks - 1:
+                    ripple_case[leg_num] = 3
+
+            elif ripple_case[leg_num] == 3:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks / 2.0
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks / 2.0
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    ripple_case[leg_num] = 4
+
+            elif ripple_case[leg_num] == 4:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks / 2.0
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks / 2.0
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    ripple_case[leg_num] = 5
+
+            elif ripple_case[leg_num] == 5:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks / 2.0
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks / 2.0
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    ripple_case[leg_num] = 5
+
+            elif ripple_case[leg_num] == 6:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks / 2.0
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks / 2.0
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    ripple_case[leg_num] = 1
+
+        if tick < numTicks - 1:
+            tick += 1
+        else:
+            tick = 0
+
 
 
 
