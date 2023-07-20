@@ -60,6 +60,9 @@ z_height_right = 0
 commandedX = 0
 commandedY = 0
 commandedR = 0
+translateX = 0
+translateY = 0
+translateZ = 0
 
 step_height_multiplier = 0.0
 strideX = 0.0
@@ -667,10 +670,43 @@ def ripple_gait():
 
 
 
+# //***********************************************************************
+# // Tetrapod Gait
+# // Right front and left rear legs move forward together, then right  
+# // rear and left middle, and finally right middle and left front.
+# //***********************************************************************
+def tetrapod():
+    if abs(commandedX) > 50 or abs(commandedY) > 50 or abs(commandedR) > 50 or tick > 0:
+        compute_strides()
+        numTicks = round(duration / FRAME_TIME_MS / 3.0)
+        for leg_num in range(0, 6):
+            compute_amplitudes()
+            if tetrapod_case[leg_num] == 1:
+                current_X[leg_num] = HOME_X[leg_num] - amplitudeX * cos(pi * tick / numTicks)
+                current_Y[leg_num] = HOME_Y[leg_num] - amplitudeY * cos(pi * tick / numTicks)
+                current_Z[leg_num] = HOME_Z[leg_num] + abs(amplitudeZ) * sin(pi * tick / numTicks)
+                if tick >= numTicks - 1:
+                    tetrapod_case[leg_num] = 2
 
-def constrain(value, minimum, maximum):
-    constrained_value = max(minimum, min(value, maximum))
-    return constrained_value
+            elif tetrapod_case[leg_num] == 2:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    tetrapod_case[leg_num] = 3
+
+            elif tetrapod_case[leg_num] == 3:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    tetrapod_case[leg_num] = 1
+
+        if tick < numTicks - 1:
+            tick += 1
+        else:
+            tick = 0
+
 
 
 # //***********************************************************************
@@ -703,6 +739,12 @@ def compute_strides():
         duration = 720
     else:
         duration = 2160
+
+
+def constrain(value, minimum, maximum):
+    constrained_value = max(minimum, min(value, maximum))
+    return constrained_value
+
 
 # //***********************************************************************
 # // Compute walking amplitudes
@@ -743,6 +785,14 @@ def compute_amplitudes(leg_num):
     else:
         amplitudeZ = step_height_multiplier * (strideY + rotOffsetY) / 4.0
         # print(amplitudeZ)	
+
+
+
+# //***********************************************************************
+# // Body translate with controller (xyz axes)
+# //***********************************************************************
+def translate_control():
+    pass
 
 
 
