@@ -15,6 +15,11 @@ COXA_LENGTH = 51  # leg part lengths
 FEMUR_LENGTH = 65
 TIBIA_LENGTH = 121
 
+TRAVEL = 0
+
+A12DEG = 209440;           # 12 degrees in radians x 1,000,000
+A30DEG = 523599;           # 30 degrees in radians x 1,000,000
+
 FRAME_TIME_MS = 20  # frame time (20msec = 50Hz)
 
 HOME_X = [82.0, 0.0, -82.0, -82.0, 0.0, 82.0]  # coxa-to-toe home positions
@@ -91,6 +96,12 @@ capture_offsets = 0
 leg1_IK_control = False
 leg6_IK_control = False
 reset_position = False
+leg1_coxa = 0 
+leg1_femur = 0
+leg1_tibia = 0 
+leg6_coxa = 0 
+leg6_femur = 0
+leg6_tibia = 0 
 
 tripod_case = [1, 2, 1, 2, 1, 2]     # for tripod gait walking
 wave_case = [1, 2, 3, 4, 5, 6]     # for tripod gait walking
@@ -102,6 +113,8 @@ gamepad_error = 0
 previousTime = 0
 
 currentTime = 0
+
+temp = 0
 
 # INITIALIZATION
 def setup():
@@ -225,16 +238,16 @@ def main():
                 tripod_gait()
             elif gait == 1:
                 wave_gait()
-        #     elif gait == 2:
-        #         ripple_gait()
-        #     elif gait == 3:
-        #         tetrapod_gait()
-        # elif mode == 2:
-        #     translate_control()
-        # elif mode == 3:
-        #     rotate_control()
-        # elif mode == 4:
-        #     one_leg_lift()
+            elif gait == 2:
+                ripple_gait()
+            elif gait == 3:
+                tetrapod_gait()
+        elif mode == 2:
+            translate_control()
+        elif mode == 3:
+            rotate_control()
+        elif mode == 4:
+            one_leg_lift()
         # elif mode == 99:
         #     set_all_90()
 
@@ -258,6 +271,13 @@ def process_gamepad():
     global commandedX
     global commandedY
     global commandedR
+    global translateX
+    global translateY
+    global translateZ
+    global sinRotX
+    global sinRotY
+    global sinRotZ
+    global temp
 
     #CONSTANTS
     # Initialize variables for maximum and minimum values
@@ -334,26 +354,36 @@ def process_gamepad():
             # Left Joystick X Axis
             if event.axis == L_STICK_X_AXIS:
                 L3_x = event.value
-                L3_x_result = map_input(L3_x, left_joystick_x_max, left_joystick_x_min, -127, 127)
+                L3_x_result = map_input(L3_x, left_joystick_x_min, left_joystick_x_max, -127, 127)
                 commandedY = L3_x_result
+                sinRotZ = sin((map_input(L3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
+                sinRotZ = cos((map_input(L3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
 
             # Left Joystick Y Axis
             elif event.axis == L_STICK_Y_AXIS:
                 L3_y = event.value
-                L3_y_result = map_input(L3_y, left_joystick_y_max, left_joystick_y_min, -127, 127)
+                L3_y_result = map_input(L3_y, left_joystick_y_min, left_joystick_y_max, -127, 127)
                 commandedX = L3_y_result
+                translateZ = map_input(L3_y, left_joystick_y_min, left_joystick_y_max, 0, 255)
 
             # Right Joystick X Axis
             if event.axis == R_STICK_X_AXIS:
                 R3_x = event.value
-                R3_x_result = map_input(R3_x, right_joystick_x_max, right_joystick_x_min, -127, 127)
+                R3_x_result = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, -127, 127)
                 commandedR = R3_x_result
+                translateY = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, -2*TRAVEL, 2*TRAVEL)
+                sinRotX = sin((map_input(R3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
+                sinRotX = cos((map_input(R3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
+                temp = R3_x
 
             # Right Joystick Y Axis
             elif event.axis == R_STICK_Y_AXIS:
                 R3_y = event.value
-                R3_y_result = map_input(R3_y, right_joystick_y_max, right_joystick_y_min, -127, 127)
+                R3_y_result = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, -127, 127)
                 commandedR = R3_y_result
+                translateX = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, -2*TRAVEL, 2*TRAVEL)
+                sinRotY = sin((map_input(R3_y, 0, 255, A12DEG, -A12DEG))/1000000.0)
+                sinRotY = cos((map_input(R3_y, 0, 255, A12DEG, -A12DEG))/1000000.0)
 
         if event.type == pygame.JOYBUTTONDOWN:
             if event.button == BUTTON_TRIANGLE:
@@ -445,6 +475,7 @@ def leg_IK(leg_number, X, Y, Z):
                 kit.servo[0].angle = theta_coxa
                 kit.servo[1].angle = theta_femur
                 kit.servo[2].angle = theta_tibia
+    wave_gait()
         # if leg_number == 1:
             # theta_coxa += 90.0  # compensate for leg mounting
             # theta_coxa = max(min(theta_coxa, 180.0), 0.0)
@@ -523,8 +554,6 @@ def tripod_gait():
     global current_Z
     global tripod_case
 
-    commandedX = map_input()
-
     # If commands are more than the deadband, then process
     if (abs(commandedX) > 50) or (abs(commandedY) > 50) or (abs(commandedR) > 50) or (tick > 0):
         compute_strides()
@@ -556,11 +585,32 @@ def tripod_gait():
 # //***********************************************************************
 def wave_gait():
     
+    time.sleep(0.015)
+
+    global commandedX
+    global commandedY
+    global commandedR
+    global RAD_TO_DEG
+    global FRAME_TIME_MS
+    global HOME_X
+    global HOME_Y
+    global HOME_Z
+    global tick
+    global duration
+    global numTicks
+    global amplitudeX
+    global amplitudeY
+    global amplitudeZ
+    global current_X
+    global current_Y
+    global current_Z
+    global tripod_case
+    
     if(abs(commandedX) > 50 or abs(commandedY > 50) or abs(commandedR) > 50 or tick > 0):
         compute_strides()
         numTicks = round(duration/ FRAME_TIME_MS/ 6.0)
         for leg_num in range(0, 6):
-            compute_amplitudes()
+            compute_amplitudes(leg_num)
             if wave_case[leg_num] == 1:
                 current_X[leg_num] = HOME_X[leg_num] - amplitudeX * cos(pi * tick / numTicks)
                 current_Y[leg_num] = HOME_Y[leg_num] - amplitudeY * cos(pi * tick/numTicks)
@@ -616,11 +666,33 @@ def wave_gait():
 # // but right side is offset so RR starts midway through the LM stroke
 # //***********************************************************************
 def ripple_gait():
+
+    time.sleep(0.015)
+
+    global commandedX
+    global commandedY
+    global commandedR
+    global RAD_TO_DEG
+    global FRAME_TIME_MS
+    global HOME_X
+    global HOME_Y
+    global HOME_Z
+    global tick
+    global duration
+    global numTicks
+    global amplitudeX
+    global amplitudeY
+    global amplitudeZ
+    global current_X
+    global current_Y
+    global current_Z
+    global tripod_case
+
     if abs(commandedX) > 50 or abs(commandedY) > 50 or abs(commandedR) > 50 or tick > 0:
         compute_strides()
         numTicks = round(duration / FRAME_TIME_MS / 6.0)
         for leg_num in range(0, 6):
-            compute_amplitudes()
+            compute_amplitudes(leg_num)
             if ripple_case[leg_num] == 1:
                 current_X[leg_num] = HOME_X[leg_num] - amplitudeX * cos(pi * tick / (numTicks * 2))
                 current_Y[leg_num] = HOME_Y[leg_num] - amplitudeY * cos(pi * tick / (numTicks * 2))
@@ -675,12 +747,35 @@ def ripple_gait():
 # // Right front and left rear legs move forward together, then right  
 # // rear and left middle, and finally right middle and left front.
 # //***********************************************************************
-def tetrapod():
+def tetrapod_gait():
+
+    
+    time.sleep(0.015)
+
+    global commandedX
+    global commandedY
+    global commandedR
+    global RAD_TO_DEG
+    global FRAME_TIME_MS
+    global HOME_X
+    global HOME_Y
+    global HOME_Z
+    global tick
+    global duration
+    global numTicks
+    global amplitudeX
+    global amplitudeY
+    global amplitudeZ
+    global current_X
+    global current_Y
+    global current_Z
+    global tripod_case
+
     if abs(commandedX) > 50 or abs(commandedY) > 50 or abs(commandedR) > 50 or tick > 0:
         compute_strides()
         numTicks = round(duration / FRAME_TIME_MS / 3.0)
         for leg_num in range(0, 6):
-            compute_amplitudes()
+            compute_amplitudes(leg_num)
             if tetrapod_case[leg_num] == 1:
                 current_X[leg_num] = HOME_X[leg_num] - amplitudeX * cos(pi * tick / numTicks)
                 current_Y[leg_num] = HOME_Y[leg_num] - amplitudeY * cos(pi * tick / numTicks)
@@ -792,8 +887,149 @@ def compute_amplitudes(leg_num):
 # // Body translate with controller (xyz axes)
 # //***********************************************************************
 def translate_control():
-    pass
+    global current_X
+    global current_Y
+    global current_Z
+    global HOME_X
+    global HOME_Y
+    global HOME_Z
+    global translateX
+    global translateY
+    global translateZ
+    global offset_X
+    global offset_Y
+    global offset_Z
+    global capture_offsets
+    global mode
 
+    for leg_num in range(0, 6):
+        current_X[leg_num] = HOME_X[leg_num] + translateX
+
+    for leg_num in range(0, 6):
+        current_Y[leg_num] = HOME_Y[leg_num] + translateY
+
+    if translateZ > 127:
+        translateZ = map_input(translateZ, 128, 255, 0, TRAVEL)
+    else:
+        translateZ = map_input(translateZ, 0, 127, -3*TRAVEL , 0)
+
+    for leg_num in range(0, 6):
+        current_Z[leg_num] = HOME_Z[leg_num] + translateZ
+
+    if (capture_offsets == True):
+        for leg_num in range(0, 6):
+            offset_X[leg_num] = offset_X[leg_num] + translateX
+            offset_Y[leg_num] = offset_Y[leg_num] + translateY
+            offset_Z[leg_num] = offset_Z[leg_num] + translateZ
+            current_X[leg_num] = HOME_X[leg_num]
+            current_Y[leg_num] = HOME_Y[leg_num]
+            current_Z[leg_num] = HOME_Z[leg_num]
+
+    if capture_offsets == True:
+        capture_offsets = False
+        mode = 0
+
+
+
+# //***********************************************************************
+# // Body rotate with controller (xyz axes)
+# //***********************************************************************
+def rotate_control():
+    global totalX
+    global totalY
+    global totalZ
+    global rotOffsetX
+    global rotOffsetY
+    global rotOffsetZ
+    global current_X
+    global current_Y
+    global current_Z
+    global HOME_X
+    global HOME_Y
+    global HOME_Z
+    global translateX
+    global translateY
+    global translateZ
+    global offset_X
+    global offset_Y
+    global offset_Z
+    global capture_offsets
+    global mode
+
+    if translateZ > 127:
+        translateZ = map_input(translateZ, 128, 255, 0, TRAVEL)
+    else:
+        translateZ = map_input(translateZ, 0, 127, -3*TRAVEL, 0)
+
+    for leg_num in range(0, 6):
+        totalX = HOME_X[leg_num] + BODY_X[leg_num]
+        totalY = HOME_Y[leg_num] + BODY_Y[leg_num]
+        totalZ = HOME_Z[leg_num] + BODY_Z[leg_num]
+
+        # perform 3 axis rotations
+        rotOffsetX =  totalX*cosRotY*cosRotZ + totalY*sinRotX*sinRotY*cosRotZ + totalY*cosRotX*sinRotZ - totalZ*cosRotX*sinRotY*cosRotZ + totalZ*sinRotX*sinRotZ - totalX;
+        rotOffsetY = -totalX*cosRotY*sinRotZ - totalY*sinRotX*sinRotY*sinRotZ + totalY*cosRotX*cosRotZ + totalZ*cosRotX*sinRotY*sinRotZ + totalZ*sinRotX*cosRotZ - totalY;
+        rotOffsetZ =  totalX*sinRotY - totalY*sinRotX*cosRotY + totalZ*cosRotX*cosRotY - totalZ
+
+        # Calculate foot positions to achieve desired rotation
+        current_X[leg_num] = HOME_X[leg_num] + rotOffsetX;
+        current_Y[leg_num] = HOME_Y[leg_num] + rotOffsetY;
+        current_Z[leg_num] = HOME_Z[leg_num] + rotOffsetZ + translateZ;
+
+        # lock in offsets if commanded
+        if capture_offsets == True:
+            offset_X[leg_num] = offset_X[leg_num] + rotOffsetX
+            offset_Y[leg_num] = offset_Y[leg_num] + rotOffsetY
+            offset_Z[leg_num] = offset_Z[leg_num] + rotOffsetZ + translateZ
+            current_X[leg_num] = HOME_X[leg_num]
+            current_Y[leg_num] = HOME_Y[leg_num]
+            current_Z[leg_num] = HOME_Z[leg_num]
+    
+    # if offsets were commanded, exit current mode
+    if capture_offsets == True:
+        capture_offsets = False
+        mode = 0
+
+# Function to read and print current servo positions
+def read_servo_positions(leg1 = False, leg6 = False, pin_num = None):
+    if leg1 == True:
+        #change to kit1
+        servo_angle = kit.servo[pin_num].angle
+    if leg6 == True:
+        #change to kit2
+        servo_angle = kit.servo[pin_num].angle
+    return servo_angle
+
+# //***********************************************************************
+# // One leg lift mode
+# // also can set z step height using capture offsets
+# //***********************************************************************
+def one_leg_lift():
+    global leg1_coxa
+    global leg1_femur
+    global leg1_tibia
+    global leg6_coxa
+    global leg6_femur
+    global leg6_tibia
+    global leg1_IK_control
+    global leg6_IK_control
+
+    # read current leg 1 servo positions the first time
+    if leg1_IK_control == True:
+        leg1_coxa = read_servo_positions(leg1=True, pin_num=0)
+        leg1_femur = read_servo_positions(leg1=True, pin_num=1)
+        leg1_tibia = read_servo_positions(leg1=True, pin_num=2)
+        leg1_IK_control = False
+
+    # read current leg 1 servo positions the first time
+    # change pin number if required
+    if leg6_IK_control == True:
+        leg6_coxa = read_servo_positions(leg2=True, pin_num=0)
+        leg6_femur = read_servo_positions(leg2=True, pin_num=1)
+        leg6_tibia = read_servo_positions(leg2=True, pin_num=2)
+        leg6_IK_control = False
+
+    
 
 
 if __name__ == '__main__':
