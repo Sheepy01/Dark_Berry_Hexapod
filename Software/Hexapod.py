@@ -1,13 +1,9 @@
 
-import sys
 import time
 import math
 import pygame
-import loading_animation as load
-from colorama import Fore, Style
 from adafruit_servokit import ServoKit
 from math import sin, cos, tanh, tan, radians, pi
-from pyPS4Controller.controller import Controller
 
 kit = ServoKit(channels=16)
 
@@ -94,6 +90,9 @@ leg6_IK_control = False
 reset_position = False
 
 tripod_case = [1, 2, 1, 2, 1, 2]     # for tripod gait walking
+wave_case = [1, 2, 3, 4, 5, 6]     # for tripod gait walking
+ripple_case = [2, 6, 4, 1, 3, 5]     # for tripod gait walking
+tetrapod_case = [1, 3, 2, 1, 2, 3]     # for tripod gait walking
 
 gamepad_error = 0
 
@@ -119,14 +118,13 @@ def setup():
     global leg1_IK_control
     global leg6_IK_control
 
-    load.loading_screen()
+    #load.loading_screen()
 
     #INITIALIZE PCA9685
     kit = ServoKit(channels=16)
     for i in range(nbPCAServo):
         kit.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
         kit.servo[i].angle = 90
-        time.sleep(2)
 
     pygame.init()
     pygame.joystick.init()
@@ -222,8 +220,8 @@ def main():
         if mode == 1:
             if gait == 0:
                 tripod_gait()
-        #     elif gait == 1:
-        #         wave_gait()
+            elif gait == 1:
+                wave_gait()
         #     elif gait == 2:
         #         ripple_gait()
         #     elif gait == 3:
@@ -238,12 +236,6 @@ def main():
         #     set_all_90()
 
 
-def map_input(input_value, input_min, input_max, output_min, output_max):
-    # Map the input value to the output range
-    mapped_value = (input_value - input_min) * (output_max - output_min) // (input_max - input_min) + output_min
-    # Constrain the mapped value within the output range
-    mapped_value = max(min(mapped_value, output_max), output_min)
-    return mapped_value
 
 def process_gamepad():
 
@@ -383,16 +375,32 @@ def process_gamepad():
 
             if event.button == BUTTON_SHARE:
                 print("BUTTON_SHARE")
+        
             if event.button == PS_BUTTON:
                 print("PS_BUTTON")
+                mode = 99
+
             if event.button == OPTIONS_BUTTON:
                 print("OPTIONS_BUTTON")
+                if(gait_speed == 0):
+                    gait_speed = 1
+                else:
+                    gait_speed = 0
+
             if event.button == L2_IN:
                 print("L2_IN")
+                for leg_num in range(0, 6):
+                    offset_X[leg_num] = 0
+                    offset_Y[leg_num] = 0
+                    offset_Z[leg_num] = 0
+
             if event.button == R2_IN:
                 print("R2_IN")
+
             if event.button == L_STICK_IN:
                 print("L_STICK_IN")
+
+
             if event.button == R_STICK_IN:
                 print("R_STICK_IN")
             if event.button == L1_IN:
@@ -481,6 +489,14 @@ def leg_IK(leg_number, X, Y, Z):
         #         #kit.servo[TIBIA6_SERVO].angle = theta_tibia
 
 
+def map_input(input_value, input_min, input_max, output_min, output_max):
+    # Map the input value to the output range
+    mapped_value = (input_value - input_min) * (output_max - output_min) // (input_max - input_min) + output_min
+    # Constrain the mapped value within the output range
+    mapped_value = max(min(mapped_value, output_max), output_min)
+    return mapped_value
+
+
 def tripod_gait():
 
     time.sleep(0.015)
@@ -504,8 +520,10 @@ def tripod_gait():
     global current_Z
     global tripod_case
 
+    commandedX = map_input()
+
     # If commands are more than the deadband, then process
-    if (abs(commandedX) > 15) or (abs(commandedY) > 15) or (abs(commandedR) > 15) or (tick > 0):
+    if (abs(commandedX) > 50) or (abs(commandedY) > 50) or (abs(commandedR) > 50) or (tick > 0):
         compute_strides()
         numTicks = round(duration / FRAME_TIME_MS / 2.0)  # Total ticks divided into the two cases
         for leg_num in range(6):
@@ -529,11 +547,72 @@ def tripod_gait():
         else:
             tick = 0
 
+# //***********************************************************************
+# // Wave Gait
+# // Legs move forward one at a time while the other 5 legs provide support
+# //***********************************************************************
+def wave_gait():
+    
+    if(abs(commandedX) > 50 or abs(commandedY > 50) or abs(commandedR) > 50 or tick > 0):
+        compute_strides()
+        numTicks = round(duration/ FRAME_TIME_MS/ 6.0)
+        for leg_num in range(0, 6):
+            compute_amplitudes()
+            if wave_case[leg_num] == 1:
+                current_X[leg_num] = HOME_X[leg_num] - amplitudeX * cos(pi * tick / numTicks)
+                current_Y[leg_num] = HOME_Y[leg_num] - amplitudeY * cos(pi * tick/numTicks)
+                current_Z[leg_num] = HOME_Z[leg_num] + abs(amplitudeZ) * sin(pi * tick / numTicks)
+                if tick >= numTicks - 1:
+                    wave_case[leg_num] = 6
+
+            elif wave_case[leg_num] == 2:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks / 2.5
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks / 2.5
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    wave_case[leg_num] = 1
+            
+            elif wave_case[leg_num] == 3:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks / 2.5
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks / 2.5
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    wave_case[leg_num] = 2
+
+            elif wave_case[leg_num] == 4:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks / 2.5
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks / 2.5
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    wave_case[leg_num] = 3
+
+            elif wave_case[leg_num] == 5:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks / 2.5
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks / 2.5
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    wave_case[leg_num] = 4
+
+            elif wave_case[leg_num] == 6:
+                current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks / 2.5
+                current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks / 2.5
+                current_Z[leg_num] = HOME_Z[leg_num]
+                if tick >= numTicks - 1:
+                    wave_case[leg_num] = 5
+
+    if tick < numTicks - 1:
+        tick += 1
+    else:
+        tick = 0
+
+
+
+
+
 
 def constrain(value, minimum, maximum):
     constrained_value = max(minimum, min(value, maximum))
     return constrained_value
-
 
 
 # //***********************************************************************
