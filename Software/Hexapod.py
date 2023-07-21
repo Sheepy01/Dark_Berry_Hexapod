@@ -726,7 +726,7 @@ def ripple_gait():
                 current_Y[leg_num] = current_Y[leg_num] - amplitudeY / numTicks / 2.0
                 current_Z[leg_num] = HOME_Z[leg_num]
                 if tick >= numTicks - 1:
-                    ripple_case[leg_num] = 5
+                    ripple_case[leg_num] = 6
 
             elif ripple_case[leg_num] == 6:
                 current_X[leg_num] = current_X[leg_num] - amplitudeX / numTicks / 2.0
@@ -748,7 +748,6 @@ def ripple_gait():
 # // rear and left middle, and finally right middle and left front.
 # //***********************************************************************
 def tetrapod_gait():
-
     
     time.sleep(0.015)
 
