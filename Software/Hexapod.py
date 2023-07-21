@@ -391,7 +391,7 @@ def process_gamepad():
                 R3_x = event.value
                 R3_x_result = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, -127, 127)
                 commandedR = R3_x_result
-                translateY = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, -2*TRAVEL, 2*TRAVEL)
+                translateY = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, 0, 255)
                 sinRotX = sin((map_input(R3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 sinRotX = cos((map_input(R3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 temp = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, 0, 255)
@@ -401,7 +401,7 @@ def process_gamepad():
                 R3_y = event.value
                 R3_y_result = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, -127, 127)
                 commandedR = R3_y_result
-                translateX = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, -2*TRAVEL, 2*TRAVEL)
+                translateX = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, 0, 255)
                 sinRotY = sin((map_input(R3_y, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 sinRotY = cos((map_input(R3_y, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 temp = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, 0, 255)
@@ -447,6 +447,9 @@ def process_gamepad():
                     offset_X[leg_num] = 0
                     offset_Y[leg_num] = 0
                     offset_Z[leg_num] = 0
+                leg1_IK_control = True
+                leg6_IK_control = True
+                step_height_multiplier = 2.0
 
             if event.button == R2_IN:
                 print("R2_IN")
@@ -459,6 +462,8 @@ def process_gamepad():
                 print("R_STICK_IN")
             if event.button == L1_IN:
                 print("LEFT_BUMPER")
+                capture_offsets = True
+
             if event.button == R1_IN:
                 print("RIGHT_BUMPER")
             if event.button == TOUCH_PAD_CLICK_BUTTON:
@@ -488,22 +493,24 @@ def leg_IK(leg_number, X, Y, Z):
         theta_coxa = math.atan2(X, Y) * RAD_TO_DEG + COXA_CAL[leg_number]
 
         # # output to the appropriate leg
-        if leg_number == 0:
-            if leg1_IK_control:  # flag for IK or manual control of leg
-                theta_coxa += 45.0  # compensate for leg mounting
-                theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-                print(theta_coxa, theta_femur, theta_tibia)
-                kit.servo[0].angle = theta_coxa
-                kit.servo[1].angle = theta_femur
-                kit.servo[2].angle = theta_tibia
-    wave_gait()
-        # if leg_number == 1:
-            # theta_coxa += 90.0  # compensate for leg mounting
-            # theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-            # print(theta_coxa, theta_femur, theta_tibia)
-            # kit.servo[0].angle = theta_coxa
-            # kit.servo[1].angle = theta_femur
-            # kit.servo[2].angle = theta_tibia
+        # if leg_number == 0:
+        #     if leg1_IK_control:  # flag for IK or manual control of leg
+        #         theta_coxa += 45.0  # compensate for leg mounting
+        #         theta_coxa = max(min(theta_coxa, 180.0), 0.0)
+        #         print(theta_coxa, theta_femur, theta_tibia)
+        #         kit.servo[0].angle = theta_coxa
+        #         kit.servo[1].angle = theta_femur
+        #         kit.servo[2].angle = theta_tibia
+
+        if leg_number == 1:
+            theta_coxa += 90.0  # compensate for leg mounting
+            theta_coxa = max(min(theta_coxa, 180.0), 0.0)
+            print(theta_coxa, theta_femur, theta_tibia)
+            kit.servo[0].angle = theta_coxa
+            kit.servo[1].angle = theta_femur
+            kit.servo[2].angle = theta_tibia
+    
+    #rotate_control()
         # elif leg_number == 2:
         #     theta_coxa += 135.0  # compensate for leg mounting
         #     theta_coxa = max(min(theta_coxa, 180.0), 0.0)
@@ -554,6 +561,7 @@ def map_input(input_value, input_min, input_max, output_min, output_max):
 
 def tripod_gait():
 
+    print("Inside Tripod Gait")
     time.sleep(0.015)
 
     global commandedX
@@ -606,6 +614,7 @@ def tripod_gait():
 # //***********************************************************************
 def wave_gait():
     
+    print("Inside Wave Gait")
     time.sleep(0.015)
 
     global commandedX
@@ -688,6 +697,7 @@ def wave_gait():
 # //***********************************************************************
 def ripple_gait():
 
+    print("Inside ripple Gait")
     time.sleep(0.015)
 
     global commandedX
@@ -770,6 +780,7 @@ def ripple_gait():
 # //***********************************************************************
 def tetrapod_gait():
     
+    print("Inside Tetrapod Gait")
     time.sleep(0.015)
 
     global commandedX
@@ -907,6 +918,7 @@ def compute_amplitudes(leg_num):
 # // Body translate with controller (xyz axes)
 # //***********************************************************************
 def translate_control():
+    print("Inside Translate Control")
     global current_X
     global current_Y
     global current_Z
@@ -921,10 +933,15 @@ def translate_control():
     global offset_Z
     global capture_offsets
     global mode
+    global temp
 
+    # Compute X direction move
+    translateX = map_input(translateX, 0, 255, -2*TRAVEL, 2*TRAVEL)
     for leg_num in range(0, 6):
         current_X[leg_num] = HOME_X[leg_num] + translateX
 
+    # Compute Y direction move
+    translateY = map_input(translateY, 0, 255, 2*TRAVEL, -2*TRAVEL)
     for leg_num in range(0, 6):
         current_Y[leg_num] = HOME_Y[leg_num] + translateY
 
@@ -932,7 +949,6 @@ def translate_control():
         translateZ = map_input(translateZ, 128, 255, 0, TRAVEL)
     else:
         translateZ = map_input(translateZ, 0, 127, -3*TRAVEL , 0)
-
     for leg_num in range(0, 6):
         current_Z[leg_num] = HOME_Z[leg_num] + translateZ
 
@@ -955,6 +971,7 @@ def translate_control():
 # // Body rotate with controller (xyz axes)
 # //***********************************************************************
 def rotate_control():
+    print("Inside Rotate Control")
     global totalX
     global totalY
     global totalZ
@@ -978,8 +995,10 @@ def rotate_control():
 
     if translateZ > 127:
         translateZ = map_input(translateZ, 128, 255, 0, TRAVEL)
+        print(translateZ)
     else:
         translateZ = map_input(translateZ, 0, 127, -3*TRAVEL, 0)
+        print(translateZ)
 
     for leg_num in range(0, 6):
         totalX = HOME_X[leg_num] + BODY_X[leg_num]
