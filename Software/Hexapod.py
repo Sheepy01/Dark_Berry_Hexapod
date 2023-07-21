@@ -8,7 +8,25 @@ from math import sin, cos, tanh, tan, radians, pi
 kit = ServoKit(channels=16)
 
 #CONSTANTS
-BATT_VOLTAGE = 0  # 12V Battery analog voltage input port
+COXA1_SERVO  = 0      
+FEMUR1_SERVO = 1
+TIBIA1_SERVO = 2
+COXA2_SERVO  = 4
+FEMUR2_SERVO = 5
+TIBIA2_SERVO = 6
+COXA3_SERVO  = 8
+FEMUR3_SERVO = 9
+TIBIA3_SERVO = 10
+COXA4_SERVO  = 0
+FEMUR4_SERVO = 1
+TIBIA4_SERVO = 2
+COXA5_SERVO  = 4
+FEMUR5_SERVO = 5
+TIBIA5_SERVO = 6
+COXA6_SERVO  = 8
+FEMUR6_SERVO = 9
+TIBIA6_SERVO = 10
+
 RAD_TO_DEG = 57.2957795131
 
 COXA_LENGTH = 51  # leg part lengths
@@ -358,6 +376,7 @@ def process_gamepad():
                 commandedY = L3_x_result
                 sinRotZ = sin((map_input(L3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 sinRotZ = cos((map_input(L3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
+                temp = map_input(L3_x, left_joystick_x_min, left_joystick_x_max, 0, 255)
 
             # Left Joystick Y Axis
             elif event.axis == L_STICK_Y_AXIS:
@@ -365,6 +384,7 @@ def process_gamepad():
                 L3_y_result = map_input(L3_y, left_joystick_y_min, left_joystick_y_max, -127, 127)
                 commandedX = L3_y_result
                 translateZ = map_input(L3_y, left_joystick_y_min, left_joystick_y_max, 0, 255)
+                temp = map_input(L3_y, left_joystick_y_min, left_joystick_y_max, 0, 255)
 
             # Right Joystick X Axis
             if event.axis == R_STICK_X_AXIS:
@@ -374,7 +394,7 @@ def process_gamepad():
                 translateY = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, -2*TRAVEL, 2*TRAVEL)
                 sinRotX = sin((map_input(R3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 sinRotX = cos((map_input(R3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
-                temp = R3_x
+                temp = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, 0, 255)
 
             # Right Joystick Y Axis
             elif event.axis == R_STICK_Y_AXIS:
@@ -384,6 +404,7 @@ def process_gamepad():
                 translateX = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, -2*TRAVEL, 2*TRAVEL)
                 sinRotY = sin((map_input(R3_y, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 sinRotY = cos((map_input(R3_y, 0, 255, A12DEG, -A12DEG))/1000000.0)
+                temp = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, 0, 255)
 
         if event.type == pygame.JOYBUTTONDOWN:
             if event.button == BUTTON_TRIANGLE:
@@ -1012,6 +1033,10 @@ def one_leg_lift():
     global leg6_tibia
     global leg1_IK_control
     global leg6_IK_control
+    global temp
+    global z_height_right
+    global z_height_left
+    global step_height_multiplier
 
     # read current leg 1 servo positions the first time
     if leg1_IK_control == True:
@@ -1028,7 +1053,44 @@ def one_leg_lift():
         leg6_tibia = read_servo_positions(leg2=True, pin_num=2)
         leg6_IK_control = False
 
+    # process right joystick left/right axis
+    temp = map_input(temp, 0, 255, 45, -45)
+    constrained_coxa1_servo = constrain(int(leg1_coxa + temp), 45, 135)
+    kit.servo[COXA1_SERVO].angle = constrained_coxa1_servo
+
+    # process right joystick up/down axis
+    if temp < 117:
+        temp = map_input(temp, 116, 0, 0, 24)
+        constrained_femur1_servo = constrain(int(leg1_femur + temp), 0, 170)
+        kit.servo[FEMUR1_SERVO].angle = constrained_femur1_servo
+        constrained_tibia1_servo = constrain(int(leg1_tibia + temp), 0, 170)
+        kit.servo[TIBIA1_SERVO].angle = constrained_tibia1_servo
+    else:
+        z_height_right = constrain(temp, 140, 255)
+        z_height_right = map_input(z_height_right, 140, 255, 1, 8)
+
+    # Process left joystick left/right axis
+    temp = map_input(temp, 0, 255, 45, -45)
+    constrained_coxa6_servo = constrain(int(leg6_coxa + temp), 45, 135)
+    kit.servo[COXA6_SERVO].angle = constrained_coxa6_servo
+
+    # process right joystick up/down axis
+    if temp < 117:
+        temp = map_input(temp, 116, 0, 0, 24)
+        constrained_femur6_servo = constrain(int(leg6_femur + temp), 0, 170)
+        kit.servo[FEMUR1_SERVO].angle = constrained_femur6_servo
+        constrained_tibia6_servo = constrain(int(leg6_tibia + temp), 0, 170)
+        kit.servo[TIBIA6_SERVO].angle = constrained_tibia6_servo
+    else:
+        z_height_left = constrain(temp, 140, 255)
+        z_height_left = map_input(z_height_left, 140, 255, 1, 8)
     
+    # process z height adjustment
+    if z_height_left > z_height_right:
+        z_height_right = z_height_left
+    if capture_offsets == True:
+        step_height_multiplier = 2.0 + ((z_height_right - 2.0) / 3.0)
+        capture_offsets = False
 
 
 if __name__ == '__main__':
