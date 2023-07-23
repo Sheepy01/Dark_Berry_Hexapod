@@ -33,7 +33,7 @@ COXA_LENGTH = 51  # leg part lengths
 FEMUR_LENGTH = 65
 TIBIA_LENGTH = 121
 
-TRAVEL = 0
+TRAVEL = 30
 
 A12DEG = 209440;           # 12 degrees in radians x 1,000,000
 A30DEG = 523599;           # 30 degrees in radians x 1,000,000
@@ -918,7 +918,7 @@ def compute_amplitudes(leg_num):
 # // Body translate with controller (xyz axes)
 # //***********************************************************************
 def translate_control():
-    print("Inside Translate Control")
+    # print("Inside Translate Control")
     global current_X
     global current_Y
     global current_Z
@@ -936,18 +936,20 @@ def translate_control():
     global temp
 
     # Compute X direction move
-    translateX = map_input(translateX, 0, 255, -2*TRAVEL, 2*TRAVEL)
+    if translateX > 127 and translateZ < 256:
+        translateX = map_input(translateX, 0, 255, -2*TRAVEL, 2*TRAVEL)
     for leg_num in range(0, 6):
         current_X[leg_num] = HOME_X[leg_num] + translateX
 
     # Compute Y direction move
-    translateY = map_input(translateY, 0, 255, 2*TRAVEL, -2*TRAVEL)
+    if translateY > 0 and translateZ < 127:
+        translateY = map_input(translateY, 0, 255, 2*TRAVEL, -2*TRAVEL)
     for leg_num in range(0, 6):
         current_Y[leg_num] = HOME_Y[leg_num] + translateY
 
-    if translateZ > 127:
+    if translateZ > 127.0 and translateZ < 256:
         translateZ = map_input(translateZ, 128, 255, 0, TRAVEL)
-    else:
+    elif translateZ > 0 and translateZ < 127:
         translateZ = map_input(translateZ, 0, 127, -3*TRAVEL , 0)
     for leg_num in range(0, 6):
         current_Z[leg_num] = HOME_Z[leg_num] + translateZ
@@ -1114,4 +1116,3 @@ def one_leg_lift():
 
 if __name__ == '__main__':
     main()
-
