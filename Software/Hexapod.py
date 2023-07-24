@@ -134,8 +134,8 @@ tetrapod_case = [1, 3, 2, 1, 2, 3]     # for tripod gait walking
 gamepad_error = 0
 
 previousTime = 0
-
 currentTime = 0
+millisecs = 0.05
 
 temp = 0
 
@@ -235,47 +235,47 @@ def main():
         if currentTime - previousTime >FRAME_TIME_MS:
             previousTime = currentTime
 
-        # Read controller and process inputs
-        process_gamepad()
+            # Read controller and process inputs
+            process_gamepad()
 
-        # Reset legs to home position when commanded
-        if reset_position:
-            for leg_num in range(6):
-                current_X[leg_num] = HOME_X[leg_num]
-                current_Y[leg_num] = HOME_Y[leg_num]
-                current_Z[leg_num] = HOME_Z[leg_num]
-                reset_position = False
+            # Reset legs to home position when commanded
+            if reset_position:
+                for leg_num in range(6):
+                    current_X[leg_num] = HOME_X[leg_num]
+                    current_Y[leg_num] = HOME_Y[leg_num]
+                    current_Z[leg_num] = HOME_Z[leg_num]
+                    reset_position = False
 
-        # Position legs using IK calculations unless set all to 90 degrees mode
-        if mode < 99:
-            for leg_num in range(0, 6):
-                leg_IK(leg_num, current_X[leg_num] + offset_X[leg_num], current_Y[leg_num] + offset_Y[leg_num], current_Z[leg_num] + offset_Z[leg_num])
+            # Position legs using IK calculations unless set all to 90 degrees mode
+            if mode < 99:
+                for leg_num in range(0, 6):
+                    leg_IK(leg_num, current_X[leg_num] + offset_X[leg_num], current_Y[leg_num] + offset_Y[leg_num], current_Z[leg_num] + offset_Z[leg_num])
 
-        # Reset leg lift first pass flags if needed
-        if mode != 4:
-            leg1_IK_control = True
-            leg6_IK_control = True
+            # Reset leg lift first pass flags if needed
+            if mode != 4:
+                leg1_IK_control = True
+                leg6_IK_control = True
 
-        # Process modes
-        if mode == 1:
-            if gait == 0:
-                tripod_gait()
-            elif gait == 1:
-                wave_gait()
-            elif gait == 2:
-                ripple_gait()
-            elif gait == 3:
-                tetrapod_gait()
-        elif mode == 2:
-            translate_control()
-        elif mode == 3:
-            rotate_control()
-        elif mode == 4:
-            one_leg_lift()
-        elif mode == 5:
-            home_position()
-        # elif mode == 99:
-        #     set_all_90()
+            # Process modes
+            if mode == 1:
+                if gait == 0:
+                    tripod_gait()
+                elif gait == 1:
+                    wave_gait()
+                elif gait == 2:
+                    ripple_gait()
+                elif gait == 3:
+                    tetrapod_gait()
+            elif mode == 2:
+                translate_control()
+            elif mode == 3:
+                rotate_control()
+            elif mode == 4:
+                one_leg_lift()
+            elif mode == 5:
+                home_position()
+            # elif mode == 99:
+            #     set_all_90()
 
 
 
@@ -501,7 +501,7 @@ def leg_IK(leg_number, X, Y, Z):
     if (L3 < (TIBIA_LENGTH + FEMUR_LENGTH)) and (L3 > (TIBIA_LENGTH - FEMUR_LENGTH)):
         # compute tibia angle
         phi_tibia = math.acos((FEMUR_LENGTH**2 + TIBIA_LENGTH**2 - L3**2) / (2 * FEMUR_LENGTH * TIBIA_LENGTH))
-        theta_tibia = phi_tibia * RAD_TO_DEG + TIBIA_CAL[leg_number]
+        theta_tibia = phi_tibia * RAD_TO_DEG - 11.5 + TIBIA_CAL[leg_number]
         theta_tibia = max(min(theta_tibia, 180.0), 0.0)
 
         # compute femur angle
@@ -590,6 +590,7 @@ def home_position():
         current_X[leg_num] = 0
         current_Y[leg_num] = 0
         current_Z[leg_num] = 0
+
     for leg_num in range(0, 6):
         current_X[leg_num] = HOME_X[leg_num]
         current_Y[leg_num] = HOME_Y[leg_num]
@@ -598,7 +599,6 @@ def home_position():
 def tripod_gait():
 
     print("Inside Tripod Gait")
-    time.sleep(0.015)
 
     global commandedX
     global commandedY
@@ -643,6 +643,7 @@ def tripod_gait():
             tick += 1
         else:
             tick = 0
+    # time.sleep(millisecs)
 
 # //***********************************************************************
 # // Wave Gait
@@ -651,7 +652,7 @@ def tripod_gait():
 def wave_gait():
     
     print("Inside Wave Gait")
-    time.sleep(0.015)
+    time.sleep(millisecs)
 
     global commandedX
     global commandedY
@@ -734,7 +735,7 @@ def wave_gait():
 def ripple_gait():
 
     print("Inside ripple Gait")
-    time.sleep(0.015)
+    time.sleep(millisecs)
 
     global commandedX
     global commandedY
@@ -817,7 +818,7 @@ def ripple_gait():
 def tetrapod_gait():
     
     print("Inside Tetrapod Gait")
-    time.sleep(0.015)
+    time.sleep(millisecs)
 
     global commandedX
     global commandedY
@@ -883,11 +884,11 @@ def compute_strides():
     global gait_speed
     global duration
     # Compute stride lengths
-    strideX = 90 * commandedX / 12
+    strideX = 90 * commandedX / 127
     # print(strideX)
-    strideY = 90 * commandedY / 12
+    strideY = 90 * commandedY / 127
     # print(strideY)
-    strideR = 35 * commandedR / 12
+    strideR = 35 * commandedR / 127
     # print(strideR)
 
     # Compute rotation trig
