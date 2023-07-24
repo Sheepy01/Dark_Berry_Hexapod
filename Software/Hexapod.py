@@ -1,4 +1,5 @@
 
+
 import time
 import math
 import pygame
@@ -33,7 +34,7 @@ COXA_LENGTH = 51  # leg part lengths
 FEMUR_LENGTH = 65
 TIBIA_LENGTH = 121
 
-TRAVEL = 30
+TRAVEL = 40
 
 A12DEG = 209440;           # 12 degrees in radians x 1,000,000
 A30DEG = 523599;           # 30 degrees in radians x 1,000,000
@@ -384,6 +385,10 @@ def process_gamepad():
                 L3_y_result = map_input(L3_y, left_joystick_y_min, left_joystick_y_max, -127, 127)
                 commandedX = L3_y_result
                 translateZ = map_input(L3_y, left_joystick_y_min, left_joystick_y_max, 0, 255)
+                if translateZ > 127.0:
+                    translateZ = map_input(translateZ, 128.0, 255.0, 0, TRAVEL)
+                else:
+                    translateZ = map_input(translateZ, 0.0, 127.0, -3*TRAVEL , 0)
                 temp = map_input(L3_y, left_joystick_y_min, left_joystick_y_max, 0, 255)
 
             # Right Joystick X Axis
@@ -392,6 +397,11 @@ def process_gamepad():
                 R3_x_result = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, -127, 127)
                 commandedR = R3_x_result
                 translateY = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, 0, 255)
+                if translateY > 127.0:
+                    translateY = map_input(translateY, 128.0, 255.0, 0, 2*TRAVEL)
+                else:
+                    translateY = map_input(translateY, 0.0, 127.0, -2*TRAVEL, 0)
+                print(translateY)
                 sinRotX = sin((map_input(R3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 sinRotX = cos((map_input(R3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 temp = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, 0, 255)
@@ -402,6 +412,10 @@ def process_gamepad():
                 R3_y_result = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, -127, 127)
                 commandedR = R3_y_result
                 translateX = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, 0, 255)
+                if translateX > 127.0:
+                    translateX = map_input(translateX, 128.0, 255.0, 0, 3*TRAVEL)
+                else:
+                    translateX = map_input(translateX, 0.0, 127.0, -3*TRAVEL, 0)
                 sinRotY = sin((map_input(R3_y, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 sinRotY = cos((map_input(R3_y, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 temp = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, 0, 255)
@@ -480,7 +494,7 @@ def leg_IK(leg_number, X, Y, Z):
     if (L3 < (TIBIA_LENGTH + FEMUR_LENGTH)) and (L3 > (TIBIA_LENGTH - FEMUR_LENGTH)):
         # compute tibia angle
         phi_tibia = math.acos((FEMUR_LENGTH**2 + TIBIA_LENGTH**2 - L3**2) / (2 * FEMUR_LENGTH * TIBIA_LENGTH))
-        theta_tibia = phi_tibia * RAD_TO_DEG + 23.0 + TIBIA_CAL[leg_number]
+        theta_tibia = phi_tibia * RAD_TO_DEG + TIBIA_CAL[leg_number]
         theta_tibia = max(min(theta_tibia, 180.0), 0.0)
 
         # compute femur angle
@@ -936,23 +950,17 @@ def translate_control():
     global temp
 
     # Compute X direction move
-    if translateX > 127 and translateZ < 256:
-        translateX = map_input(translateX, 0, 255, -2*TRAVEL, 2*TRAVEL)
-    for leg_num in range(0, 6):
-        current_X[leg_num] = HOME_X[leg_num] + translateX
+    if translateX != 0.0:
+        for leg_num in range(0, 6):
+            current_X[leg_num] = HOME_X[leg_num] + translateX
 
-    # Compute Y direction move
-    if translateY > 0 and translateZ < 127:
-        translateY = map_input(translateY, 0, 255, 2*TRAVEL, -2*TRAVEL)
-    for leg_num in range(0, 6):
-        current_Y[leg_num] = HOME_Y[leg_num] + translateY
+    if translateY != 0.0:
+        for leg_num in range(0, 6):
+            current_Y[leg_num] = HOME_Y[leg_num] + translateY
 
-    if translateZ > 127.0 and translateZ < 256:
-        translateZ = map_input(translateZ, 128, 255, 0, TRAVEL)
-    elif translateZ > 0 and translateZ < 127:
-        translateZ = map_input(translateZ, 0, 127, -3*TRAVEL , 0)
-    for leg_num in range(0, 6):
-        current_Z[leg_num] = HOME_Z[leg_num] + translateZ
+    if translateZ != 0.0:
+        for leg_num in range(0, 6):
+            current_Z[leg_num] = HOME_Z[leg_num] + translateZ
 
     if (capture_offsets == True):
         for leg_num in range(0, 6):
@@ -1116,3 +1124,4 @@ def one_leg_lift():
 
 if __name__ == '__main__':
     main()
+
