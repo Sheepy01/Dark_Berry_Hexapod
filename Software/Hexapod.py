@@ -267,6 +267,8 @@ def main():
             rotate_control()
         elif mode == 4:
             one_leg_lift()
+        elif mode == 5:
+            home_position()
         # elif mode == 99:
         #     set_all_90()
 
@@ -446,7 +448,7 @@ def process_gamepad():
         
             if event.button == PS_BUTTON:
                 print("PS_BUTTON")
-                mode = 99
+                mode = 5
 
             if event.button == OPTIONS_BUTTON:
                 print("OPTIONS_BUTTON")
@@ -572,6 +574,19 @@ def map_input(input_value, input_min, input_max, output_min, output_max):
     mapped_value = max(min(mapped_value, output_max), output_min)
     return mapped_value
 
+
+def home_position():
+    for leg_num in range(0, 6):
+        offset_X[leg_num] = 0
+        offset_Y[leg_num] = 0
+        offset_Z[leg_num] = 0
+        current_X[leg_num] = 0
+        current_Y[leg_num] = 0
+        current_Z[leg_num] = 0
+    for leg_num in range(0, 6):
+        current_X[leg_num] = HOME_X[leg_num]
+        current_Y[leg_num] = HOME_Y[leg_num]
+        current_Z[leg_num] = HOME_Z[leg_num]
 
 def tripod_gait():
 
