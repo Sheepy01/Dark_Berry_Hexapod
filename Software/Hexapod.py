@@ -6,7 +6,11 @@ import pygame
 from adafruit_servokit import ServoKit
 from math import sin, cos, tanh, tan, radians, pi
 
-kit = ServoKit(channels=16)
+board1_address = 0x40
+board2_address = 0x41
+
+kit1 = ServoKit(channels=16, address=board1_address)
+kit2 = ServoKit(channels=16, address=board2_address)
 
 #CONSTANTS
 COXA1_SERVO  = 0      
@@ -156,10 +160,11 @@ def setup():
     #load.loading_screen()
 
     #INITIALIZE PCA9685
-    kit = ServoKit(channels=16)
     for i in range(nbPCAServo):
-        kit.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
-        kit.servo[i].angle = 90
+        kit1.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
+        kit2.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
+        kit1.servo[i].angle = 90
+        kit2.servo[i].angle = 90
 
     pygame.init()
     pygame.joystick.init()
@@ -509,62 +514,64 @@ def leg_IK(leg_number, X, Y, Z):
         theta_coxa = math.atan2(X, Y) * RAD_TO_DEG + COXA_CAL[leg_number]
 
         # # output to the appropriate leg
-        # if leg_number == 0:
-        #     if leg1_IK_control:  # flag for IK or manual control of leg
-        #         theta_coxa += 45.0  # compensate for leg mounting
-        #         theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-        #         print(theta_coxa, theta_femur, theta_tibia)
-        #         kit.servo[0].angle = theta_coxa
-        #         kit.servo[1].angle = theta_femur
-        #         kit.servo[2].angle = theta_tibia
+        if leg_number == 0:
+            if leg1_IK_control:  # flag for IK or manual control of leg
+                theta_coxa += 45.0  # compensate for leg mounting
+                theta_coxa = max(min(theta_coxa, 180.0), 0.0)
+                print(theta_coxa, theta_femur, theta_tibia)
+                kit1.servo[COXA1_SERVO].angle = theta_coxa
+                kit1.servo[FEMUR1_SERVO].angle = theta_femur
+                kit1.servo[TIBIA1_SERVO].angle = theta_tibia
 
-        if leg_number == 1:
+        elif leg_number == 1:
             theta_coxa += 90.0  # compensate for leg mounting
             theta_coxa = max(min(theta_coxa, 180.0), 0.0)
             print(theta_coxa, theta_femur, theta_tibia)
-            kit.servo[0].angle = theta_coxa
-            kit.servo[1].angle = theta_femur
-            kit.servo[2].angle = theta_tibia
+            kit1.servo[COXA2_SERVO].angle = theta_coxa
+            kit1.servo[FEMUR2_SERVO].angle = theta_femur
+            kit1.servo[TIBIA2_SERVO].angle = theta_tibia
     
-    #rotate_control()
-        # elif leg_number == 2:
-        #     theta_coxa += 135.0  # compensate for leg mounting
-        #     theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-        #     print(theta_coxa, theta_femur, theta_tibia)
-        #     #kit.servo[COXA3_SERVO].angle = theta_coxa
-        #     #kit.servo[FEMUR3_SERVO].angle = theta_femur
-        #     #kit.servo[TIBIA3_SERVO].angle = theta_tibia
-        # if leg_number == 3:
-            # if theta_coxa < 0:  # compensate for leg mounting
-                # theta_coxa += 225.0  # need to use different positive and negative offsets
-            # else:
-                # theta_coxa -= 135.0  # due to atan2 results above!
-            # theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-            # print(theta_coxa, theta_femur, theta_tibia)
-            # kit.servo[0].angle = theta_coxa
-            # kit.servo[1].angle = theta_femur
-            # kit.servo[2].angle = theta_tibia
-        # if leg_number == 4:
-            # if theta_coxa < 0:  # compensate for leg mounting
-                # theta_coxa += 270.0  # need to use different positive and negative offsets
-            # else:
-                # theta_coxa -= 90.0  # due to atan2 results above!
-            # theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-            # print(theta_coxa, theta_femur, theta_tibia)
-            # kit.servo[0].angle = theta_coxa
-            # kit.servo[1].angle = theta_femur
-            # kit.servo[2].angle = theta_tibia
-        # elif leg_number == 5:
-        #     if leg6_IK_control:  # flag for IK or manual control of leg
-        #         if theta_coxa < 0:  # compensate for leg mounting
-        #             theta_coxa += 315.0  # need to use different positive and negative offsets
-        #         else:
-        #             theta_coxa -= 45.0  # due to atan2 results above!
-        #         theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-        #         print(theta_coxa, theta_femur, theta_tibia)
-        #         #kit.servo[COXA6_SERVO].angle = theta_coxa
-        #         #kit.servo[FEMUR6_SERVO].angle = theta_femur
-        #         #kit.servo[TIBIA6_SERVO].angle = theta_tibia
+        elif leg_number == 2:
+            theta_coxa += 135.0  # compensate for leg mounting
+            theta_coxa = max(min(theta_coxa, 180.0), 0.0)
+            print(theta_coxa, theta_femur, theta_tibia)
+            kit1.servo[COXA3_SERVO].angle = theta_coxa
+            kit1.servo[FEMUR3_SERVO].angle = theta_femur
+            kit1.servo[TIBIA3_SERVO].angle = theta_tibia
+
+        elif leg_number == 3:
+            if theta_coxa < 0:  # compensate for leg mounting
+                theta_coxa += 225.0  # need to use different positive and negative offsets
+            else:
+                theta_coxa -= 135.0  # due to atan2 results above!
+            theta_coxa = max(min(theta_coxa, 180.0), 0.0)
+            print(theta_coxa, theta_femur, theta_tibia)
+            kit2.servo[COXA4_SERVO].angle = theta_coxa
+            kit2.servo[FEMUR4_SERVO].angle = theta_femur
+            kit2.servo[TIBIA4_SERVO].angle = theta_tibia
+
+        elif leg_number == 4:
+            if theta_coxa < 0:  # compensate for leg mounting
+                theta_coxa += 270.0  # need to use different positive and negative offsets
+            else:
+                theta_coxa -= 90.0  # due to atan2 results above!
+            theta_coxa = max(min(theta_coxa, 180.0), 0.0)
+            print(theta_coxa, theta_femur, theta_tibia)
+            kit2.servo[COXA5_SERVO].angle = theta_coxa
+            kit2.servo[FEMUR5_SERVO].angle = theta_femur
+            kit2.servo[TIBIA5_SERVO].angle = theta_tibia
+
+        elif leg_number == 5:
+            if leg6_IK_control:  # flag for IK or manual control of leg
+                if theta_coxa < 0:  # compensate for leg mounting
+                    theta_coxa += 315.0  # need to use different positive and negative offsets
+                else:
+                    theta_coxa -= 45.0  # due to atan2 results above!
+                theta_coxa = max(min(theta_coxa, 180.0), 0.0)
+                print(theta_coxa, theta_femur, theta_tibia)
+                kit2.servo[COXA6_SERVO].angle = theta_coxa
+                kit2.servo[FEMUR6_SERVO].angle = theta_femur
+                kit2.servo[TIBIA6_SERVO].angle = theta_tibia
 
 
 def map_input(input_value, input_min, input_max, output_min, output_max):
@@ -1058,10 +1065,10 @@ def rotate_control():
 def read_servo_positions(leg1 = False, leg6 = False, pin_num = None):
     if leg1 == True:
         #change to kit1
-        servo_angle = kit.servo[pin_num].angle
+        servo_angle = kit1.servo[pin_num].angle
     if leg6 == True:
         #change to kit2
-        servo_angle = kit.servo[pin_num].angle
+        servo_angle = kit2.servo[pin_num].angle
     return servo_angle
 
 # //***********************************************************************
@@ -1100,15 +1107,15 @@ def one_leg_lift():
     # process right joystick left/right axis
     temp = map_input(temp, 0, 255, 45, -45)
     constrained_coxa1_servo = constrain(int(leg1_coxa + temp), 45, 135)
-    kit.servo[COXA1_SERVO].angle = constrained_coxa1_servo
+    kit1.servo[COXA1_SERVO].angle = constrained_coxa1_servo
 
     # process right joystick up/down axis
     if temp < 117:
         temp = map_input(temp, 116, 0, 0, 24)
         constrained_femur1_servo = constrain(int(leg1_femur + temp), 0, 170)
-        kit.servo[FEMUR1_SERVO].angle = constrained_femur1_servo
+        kit1.servo[FEMUR1_SERVO].angle = constrained_femur1_servo
         constrained_tibia1_servo = constrain(int(leg1_tibia + temp), 0, 170)
-        kit.servo[TIBIA1_SERVO].angle = constrained_tibia1_servo
+        kit1.servo[TIBIA1_SERVO].angle = constrained_tibia1_servo
     else:
         z_height_right = constrain(temp, 140, 255)
         z_height_right = map_input(z_height_right, 140, 255, 1, 8)
@@ -1116,15 +1123,15 @@ def one_leg_lift():
     # Process left joystick left/right axis
     temp = map_input(temp, 0, 255, 45, -45)
     constrained_coxa6_servo = constrain(int(leg6_coxa + temp), 45, 135)
-    kit.servo[COXA6_SERVO].angle = constrained_coxa6_servo
+    kit1.servo[COXA6_SERVO].angle = constrained_coxa6_servo
 
     # process right joystick up/down axis
     if temp < 117:
         temp = map_input(temp, 116, 0, 0, 24)
         constrained_femur6_servo = constrain(int(leg6_femur + temp), 0, 170)
-        kit.servo[FEMUR1_SERVO].angle = constrained_femur6_servo
+        kit1.servo[FEMUR1_SERVO].angle = constrained_femur6_servo
         constrained_tibia6_servo = constrain(int(leg6_tibia + temp), 0, 170)
-        kit.servo[TIBIA6_SERVO].angle = constrained_tibia6_servo
+        kit1.servo[TIBIA6_SERVO].angle = constrained_tibia6_servo
     else:
         z_height_left = constrain(temp, 140, 255)
         z_height_left = map_input(z_height_left, 140, 255, 1, 8)
