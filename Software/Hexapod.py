@@ -1,5 +1,4 @@
 
-
 import time
 import math
 import pygame
@@ -47,15 +46,15 @@ FRAME_TIME_MS = 20  # frame time (20msec = 50Hz)
 
 HOME_X = [82.0, 0.0, -82.0, -82.0, 0.0, 82.0]  # coxa-to-toe home positions
 HOME_Y = [82.0, 116.0, 82.0, -82.0, -116.0, -82.0]
-HOME_Z = [-110.0, -110.0, -110.0, -110.0, -110.0, -110.0]
+HOME_Z = [-80.0, -80.0, -80.0, -80.0, -80.0, -80.0]
 
 BODY_X = [110.4, 0.0, -110.4, -110.4, 0.0, 110.4]  # body center-to-coxa servo distances
 BODY_Y = [58.4, 90.8, 58.4, -58.4, -90.8, -58.4]
 BODY_Z = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-COXA_CAL = [2, -1, -1, -3, -2, -3]  # servo calibration constants
-FEMUR_CAL = [4, -2, 0, -1, 0, 0]
-TIBIA_CAL = [0, -3, -3, -2, -3, -1]
+COXA_CAL = [-10, -13, -13, 0, 10, 8]  # servo calibration constants
+FEMUR_CAL = [-35+22, -28+22, -37+22, -10+22, -25+22, -20+22]
+TIBIA_CAL = [-13, 1, -5, 13, 10, 15]
 
 MIN_PULSE = 500
 MAX_PULSE = 2500
@@ -341,7 +340,6 @@ def process_gamepad():
     R_STICK_Y_AXIS = 4
 
     for event in pygame.event.get():
-
         if event.type == pygame.JOYBUTTONDOWN:
             button_id = event.button
             button_name = pygame.joystick.Joystick(0).get_button(button_id)
@@ -404,10 +402,10 @@ def process_gamepad():
                 R3_x_result = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, -127, 127)
                 commandedR = R3_x_result
                 translateY = map_input(R3_x, right_joystick_x_min, right_joystick_x_max, 0, 255)
-                if translateY > 127.0:
-                    translateY = map_input(translateY, 128.0, 255.0, 0, 2*TRAVEL)
+                if translateY > 135.0:
+                    translateY = map_input(translateY, 136.0, 255.0, 0, 2*TRAVEL)
                 else:
-                    translateY = map_input(translateY, 0.0, 127.0, -2*TRAVEL, 0)
+                    translateY = map_input(translateY, 0.0, 135.0, -2*TRAVEL, 0)
                 print(translateY)
                 sinRotX = sin((map_input(R3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 sinRotX = cos((map_input(R3_x, 0, 255, A12DEG, -A12DEG))/1000000.0)
@@ -419,10 +417,10 @@ def process_gamepad():
                 R3_y_result = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, -127, 127)
                 commandedR = R3_y_result
                 translateX = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, 0, 255)
-                if translateX > 127.0:
-                    translateX = map_input(translateX, 128.0, 255.0, 0, 3*TRAVEL)
+                if translateX > 135.0:
+                    translateX = map_input(translateX, 136.0, 255.0, 0, 3*TRAVEL)
                 else:
-                    translateX = map_input(translateX, 0.0, 127.0, -3*TRAVEL, 0)
+                    translateX = map_input(translateX, 0.0, 135.0, -3*TRAVEL, 0)
                 sinRotY = sin((map_input(R3_y, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 sinRotY = cos((map_input(R3_y, 0, 255, A12DEG, -A12DEG))/1000000.0)
                 temp = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, 0, 255)
@@ -596,8 +594,12 @@ def home_position():
         current_Y[leg_num] = HOME_Y[leg_num]
         current_Z[leg_num] = HOME_Z[leg_num]
 
-def tripod_gait():
 
+# ***********************************************************************
+#  Tripod Gait
+#  Group of 3 legs move forward while the other 3 legs provide support
+# ***********************************************************************
+def tripod_gait():
     print("Inside Tripod Gait")
 
     global commandedX
@@ -645,12 +647,11 @@ def tripod_gait():
             tick = 0
     # time.sleep(millisecs)
 
-# //***********************************************************************
-# // Wave Gait
-# // Legs move forward one at a time while the other 5 legs provide support
-# //***********************************************************************
+# ***********************************************************************
+#  Wave Gait
+#  Legs move forward one at a time while the other 5 legs provide support
+# ***********************************************************************
 def wave_gait():
-    
     print("Inside Wave Gait")
     time.sleep(millisecs)
 
@@ -727,11 +728,11 @@ def wave_gait():
 
 
 
-# //***********************************************************************
-# // Ripple Gait
-# // Left legs move forward rear-to-front while right also do the same,
-# // but right side is offset so RR starts midway through the LM stroke
-# //***********************************************************************
+# ***********************************************************************
+#  Ripple Gait
+#  Left legs move forward rear-to-front while right also do the same,
+#  but right side is offset so RR starts midway through the LM stroke
+# ***********************************************************************
 def ripple_gait():
 
     print("Inside ripple Gait")
@@ -810,11 +811,11 @@ def ripple_gait():
 
 
 
-# //***********************************************************************
-# // Tetrapod Gait
-# // Right front and left rear legs move forward together, then right  
-# // rear and left middle, and finally right middle and left front.
-# //***********************************************************************
+# ***********************************************************************
+#  Tetrapod Gait
+#  Right front and left rear legs move forward together, then right  
+#  rear and left middle, and finally right middle and left front.
+# ***********************************************************************
 def tetrapod_gait():
     
     print("Inside Tetrapod Gait")
@@ -872,9 +873,9 @@ def tetrapod_gait():
 
 
 
-# //***********************************************************************
-# // Compute walking stride lengths
-# //***********************************************************************
+# ***********************************************************************
+#  Compute walking stride lengths
+# ***********************************************************************
 def compute_strides():
     global strideX
     global strideY
@@ -909,9 +910,9 @@ def constrain(value, minimum, maximum):
     return constrained_value
 
 
-# //***********************************************************************
-# // Compute walking amplitudes
-# //***********************************************************************
+# ***********************************************************************
+#  Compute walking amplitudes
+# ***********************************************************************
 def compute_amplitudes(leg_num):
     global totalX
     global totalY
@@ -951,9 +952,9 @@ def compute_amplitudes(leg_num):
 
 
 
-# //***********************************************************************
-# // Body translate with controller (xyz axes)
-# //***********************************************************************
+# ***********************************************************************
+#  Body translate with controller (xyz axes)
+# ***********************************************************************
 def translate_control():
     # print("Inside Translate Control")
     global current_X
@@ -1000,9 +1001,9 @@ def translate_control():
 
 
 
-# //***********************************************************************
-# // Body rotate with controller (xyz axes)
-# //***********************************************************************
+# ***********************************************************************
+#  Body rotate with controller (xyz axes)
+# ***********************************************************************
 def rotate_control():
     print("Inside Rotate Control")
     global totalX
@@ -1072,10 +1073,10 @@ def read_servo_positions(leg1 = False, leg6 = False, pin_num = None):
         servo_angle = kit2.servo[pin_num].angle
     return servo_angle
 
-# //***********************************************************************
-# // One leg lift mode
-# // also can set z step height using capture offsets
-# //***********************************************************************
+# ***********************************************************************
+#  One leg lift mode
+#  also can set z step height using capture offsets
+# ***********************************************************************
 def one_leg_lift():
     global leg1_coxa
     global leg1_femur
@@ -1147,4 +1148,3 @@ def one_leg_lift():
 
 if __name__ == '__main__':
     main()
-
