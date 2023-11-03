@@ -8,9 +8,9 @@ import board
 import busio
 
 #CONSTANTS
-COXA1_SERVO  = 13 
-FEMUR1_SERVO = 14
-TIBIA1_SERVO = 15
+COXA1_SERVO  = 0 
+FEMUR1_SERVO = 1
+TIBIA1_SERVO = 2
 COXA2_SERVO  = 4
 FEMUR2_SERVO = 5
 TIBIA2_SERVO = 6
@@ -146,10 +146,6 @@ kit1 = None
 kit2 = None
 board1_address = 0x40
 board2_address = 0x41
-
-rx_angle = 0.0
-ry_angle = 0.0
-rz_angle = 0.0
 
 def clear_PCA9685_boards(addresses):
     i2c = busio.I2C(board.SCL, board.SDA)
@@ -345,8 +341,8 @@ def process_gamepad():
 
     #CONSTANTS
     # Initialize variables for maximum and minimum values
-    left_joystick_x_max = -1.0
-    left_joystick_x_min = 1.0
+    left_joystick_x_max = 1.0
+    left_joystick_x_min = -1.0
     left_joystick_y_max = -1.0
     left_joystick_y_min = 1.0
 
@@ -509,8 +505,13 @@ def process_gamepad():
                 print("OPTIONS_BUTTON")
                 if(gait_speed == 0):
                     gait_speed = 1
-                else:
+                    print(gait_speed)
+                elif(gait_speed == 1):
+                    gait_speed = 2
+                    print(gait_speed)
+                elif(gait_speed == 2):
                     gait_speed = 0
+                    print(gait_speed)
 
             if event.button == L2_IN:
                 if step_height_value == 1:
@@ -538,7 +539,6 @@ def process_gamepad():
                 
             # if event.button == L_STICK_IN:
                 # print("L_STICK_IN")
-                
                 
             if event.button == R_STICK_IN:
                 print("R_STICK_IN")
@@ -585,12 +585,12 @@ def leg_IK(leg_number, X, Y, Z):
         setServoPosition(leg_number, theta_coxa, theta_femur, theta_tibia) 
     
 def setServoPosition(leg_number, theta_coxa, theta_femur, theta_tibia):
-        # # output to the appropriate leg
+        # output to the appropriate leg
         if leg_number == 0:
             if leg1_IK_control:  # flag for IK or manual control of leg
                 theta_coxa += 45.0  # compensate for leg mounting
                 theta_coxa = max(min(theta_coxa, 180.0), 0.0)
-                #print(theta_coxa, theta_femur, theta_tibia)
+                # print(theta_coxa, theta_femur, theta_tibia)
                 kit1.servo[COXA1_SERVO].angle = theta_coxa
                 kit1.servo[FEMUR1_SERVO].angle = theta_femur
                 kit1.servo[TIBIA1_SERVO].angle = theta_tibia
@@ -644,7 +644,6 @@ def setServoPosition(leg_number, theta_coxa, theta_femur, theta_tibia):
                 kit2.servo[COXA6_SERVO].angle = theta_coxa
                 kit2.servo[FEMUR6_SERVO].angle = theta_femur
                 kit2.servo[TIBIA6_SERVO].angle = theta_tibia
-
 
 def map_input(input_value, input_min, input_max, output_min, output_max):
     # Map the input value to the output range
@@ -720,10 +719,7 @@ def tripod_gait():
 # // Legs move forward one at a time while the other 5 legs provide support
 # //***********************************************************************
 def wave_gait():
-    
     print("Inside Wave Gait")
-    time.sleep(millisecs)
-
     global commandedX
     global commandedY
     global commandedR
@@ -803,10 +799,7 @@ def wave_gait():
 # // but right side is offset so RR starts midway through the LM stroke
 # //***********************************************************************
 def ripple_gait():
-
     print("Inside ripple Gait")
-    time.sleep(millisecs)
-
     global commandedX
     global commandedY
     global commandedR
@@ -886,10 +879,7 @@ def ripple_gait():
 # // rear and left middle, and finally right middle and left front.
 # //***********************************************************************
 def tetrapod_gait():
-    
     print("Inside Tetrapod Gait")
-    time.sleep(millisecs)
-
     global commandedX
     global commandedY
     global commandedR
@@ -964,9 +954,11 @@ def compute_strides():
 
     # Set duration for normal and slow speed modes
     if gait_speed == 0:
-        duration = 720 #720
+        duration = 360
+    elif(gait_speed == 1):
+        duration = 720
     else:
-        duration = 2000 #2160
+        duration = 2160
 
 
 def constrain(value, minimum, maximum):
@@ -1218,4 +1210,3 @@ def one_leg_lift():
 
 if __name__ == '__main__':
     initiateHexapod()
-
