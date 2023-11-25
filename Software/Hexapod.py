@@ -594,6 +594,7 @@ def setServoPosition(leg_number, theta_coxa, theta_femur, theta_tibia):
                 kit1.servo[COXA1_SERVO].angle = theta_coxa
                 kit1.servo[FEMUR1_SERVO].angle = theta_femur
                 kit1.servo[TIBIA1_SERVO].angle = theta_tibia
+                
 
         elif leg_number == 1:
             theta_coxa += 90.0  # compensate for leg mounting
@@ -1210,3 +1211,4 @@ def one_leg_lift():
 
 if __name__ == '__main__':
     initiateHexapod()
+
