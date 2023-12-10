@@ -1,4 +1,5 @@
 
+import curses
 import time
 import math
 import pygame
@@ -6,6 +7,8 @@ from adafruit_servokit import ServoKit
 from adafruit_pca9685 import PCA9685
 import board
 import busio
+import sys
+import os
 
 #CONSTANTS
 COXA1_SERVO  = 0 
@@ -129,6 +132,9 @@ leg6_coxa = 0
 leg6_femur = 0
 leg6_tibia = 0 
 
+movement = ""
+offset_check = ""
+
 tripod_case = [1, 2, 1, 2, 1, 2]     # for tripod gait walking
 wave_case = [1, 2, 3, 4, 5, 6]     # for tripod gait walking
 ripple_case = [2, 6, 4, 1, 3, 5]     # for tripod gait walking
@@ -174,6 +180,7 @@ def setup():
     global kit2
     global MIN_PULSE
     global MAX_PULSE
+    global offset_check
     
     #load.loading_screen()
     clear_PCA9685_boards([board1_address, board2_address])
@@ -216,18 +223,85 @@ def setup():
         offset_Z[leg_num] = 0.0
 
     capture_offsets = False
+    offset_check = "OFF"
     step_height_multiplier = step_height_value
 
-    #mode = 0
-    #gait = 0
-    gait_speed = 0
+    gait_speed = 1
     reset_position = True
     leg1_IK_control = True
     leg6_IK_control = True
 
+def print_continuous_statement(window, statement):
+    height, width = window.getmaxyx()
+    x = 0
+    window.clear()
+    window.addstr(height // 2, max((width - len(statement)) // 2, 0), statement)
+    window.refresh()
+    x = (x + 1) % width
 
+def printInformation():
+    mode_name = ""
+    speed = ""
+    step_height = ""
+    gait_name = ""
+    step_height = ""
+    
+    if(mode == 1):
+        mode_name = "Walking Mode"
+    elif(mode == 2):
+        mode_name = "Translate Mode"
+    elif(mode == 3):
+        mode_name = "Rotate Mode"
+        
+    if(gait_speed == 0):
+        speed = "Fast"
+    elif(gait_speed == 1):
+        speed = "Normal"
+    elif(gait_speed == 2):
+        speed = "Slow"
+        
+    if(gait == 0):
+        gait_name = "Tripod gait"
+    elif(gait == 1):
+        gait_name = "Wave gait"
+    elif(gait == 2):
+        gait_name = "Ripple gait"
+    elif(gait == 3):
+        gait_name = "Tetrapod gait"
+        
+    if(step_height_value == 1):
+        step_height = "1"
+    elif(step_height_value == 2):
+        step_height = "2"
+    elif(step_height_value == 3):
+        step_height = "3"
+    elif(step_height_value == 4):
+        step_height = "4"
+    elif(step_height_value == 5):
+        step_height = "5"
+    elif(step_height_value == 6):
+        step_height = "6"
+    elif(step_height_value == 7):
+        step_height = "7"
+        
+    os.system('clear')
+    
+# Example usage:
+    #curses.wrapper(print_continuous_statement, f"Printing continuously... {mode_name}, {gait_name}, {movement}, {step_height}")
+    print(f'''\t\t******MENU******
+            1) Mode: {mode_name}
+            2) Gait: {gait_name}
+            3) Walking Movement: {movement}
+            4) Gait Speed: {speed}
+            5) Step Height: {step_height}
+            6) Offsets: {offset_check}''')
+    #print("\033[F\033[J", end="")
+    #os.system('stty -echo')
+    
+    
 def initiateHexapod():
     global hexapod_start
+    loading_animation()
     #INTIALIZATION
     setup()
     
@@ -237,7 +311,7 @@ def initiateHexapod():
             if event.type == pygame.JOYBUTTONDOWN:
                 if event.button == 10:
                     if hexapod_start == False:
-                        print("PS button pressed")
+                        printInformation()
                         hexapod_start = True
                         main()
                     
@@ -309,7 +383,15 @@ def main():
             # elif mode == 99:
             #     set_all_90()
 
+def loading_animation():
+    animation_chars = "/-\\|"
+    for i in range(20):  # Adjust the range based on the desired duration
+        sys.stdout.write("\r" + animation_chars[i % len(animation_chars)])
+        sys.stdout.flush()
+        time.sleep(0.1)  # Adjust the sleep duration for the desired speed
+
 def process_gamepad():
+    printInformation()
     #GLOBALS
     global mode
     global gait
@@ -338,6 +420,8 @@ def process_gamepad():
     global cosRotZ
     global temp
     global hexapod_start
+    global movement
+    global offset_check
 
     #CONSTANTS
     # Initialize variables for maximum and minimum values
@@ -379,41 +463,48 @@ def process_gamepad():
         if event.type == pygame.JOYBUTTONDOWN:
             button_id = event.button
             button_name = pygame.joystick.Joystick(0).get_button(button_id)
-            print(f"Button {button_id} ({button_name}) pressed")
+            # print(f"Button {button_id} ({button_name}) pressed")
 
         if event.type == pygame.JOYHATMOTION:
             if event.value == DPAD_UP:
                 mode = 0
                 gait = 2
                 reset_position = True
-                print(f"Mode: {mode}")
-                print(f"Gait: {gait}")
+                # print(f"Mode: {mode}")
+                # print(f"Gait: {gait}")
 
             if event.value == DPAD_DOWN:
                 mode = 0
                 gait = 0
                 reset_position = True
-                print(f"Mode: {mode}")
-                print(f"Gait: {gait}")
+                # print(f"Mode: {mode}")
+                # print(f"Gait: {gait}")
 
             if event.value == DPAD_LEFT:
                 mode = 0
                 gait = 1
                 reset_position = True
-                print(f"Mode: {mode}")
-                print(f"Gait: {gait}")
+                # print(f"Mode: {mode}")
+                # print(f"Gait: {gait}")
 
             if event.value == DPAD_RIGHT:
                 mode = 0
                 gait = 3
                 reset_position = True
-                print(f"Mode: {mode}")
-                print(f"Gait: {gait}")
+                # print(f"Mode: {mode}")
+                # print(f"Gait: {gait}")
 
         if event.type == pygame.JOYAXISMOTION:
             # Left Joystick X Axis
             if event.axis == L_STICK_X_AXIS:
                 L3_x = event.value
+                if mode == 1:
+                    if(L3_x > 0.1 and L3_x <= 1.0):
+                        movement = "Right"
+                    elif(L3_x < -0.1 and L3_x >= -1.0):
+                        movement = "Left"
+                    elif(L3_x <= 0.09 and L3_x >= -0.09):
+                        movement = "Steady"
                 L3_x_result = map_input(L3_x, left_joystick_x_min, left_joystick_x_max, -127, 127)
                 commandedY = L3_x_result
                 sinRotZ = math.sin(math.radians((map_input(L3_x, left_joystick_x_min, left_joystick_x_max, -A30DEG, A30DEG))))
@@ -424,6 +515,13 @@ def process_gamepad():
             # Left Joystick Y Axis
             elif event.axis == L_STICK_Y_AXIS:
                 L3_y = event.value
+                if mode == 1:
+                    if(L3_y > 0.1 and L3_y <= 1.0):
+                        movement = "Backward"
+                    elif(L3_y < -0.1 and L3_y >= -1.0):
+                        movement = "Forward"
+                    elif(L3_y <= 0.09 and L3_y >= -0.09):
+                        movement = "Steady"
                 L3_y_result = map_input(L3_y, left_joystick_y_min, left_joystick_y_max, -127, 127)
                 commandedX = L3_y_result
                 translateZ = map_input(L3_y, left_joystick_y_min, left_joystick_y_max, 0, 255)
@@ -437,7 +535,14 @@ def process_gamepad():
 
             # Right Joystick X Axis
             if event.axis == R_STICK_X_AXIS:
-                R3_x = event.value    
+                R3_x = event.value
+                if mode == 1:
+                    if(R3_x > 0.1 and R3_x < 1.0):
+                        movement = "Rotate Clockwise"
+                    elif(R3_x < -0.1 and R3_x > -1.0):
+                        movement = "Rotate Anti-Clockwise"
+                    elif(R3_x <= 0.09 and R3_x >= -0.09):
+                        movement = "Steady"
                 sinRotX = math.sin(math.radians((map_input(R3_x, right_joystick_x_min, right_joystick_x_max, A12DEG, -A12DEG))))
                 cosRotX = math.cos(math.radians((map_input(R3_x, right_joystick_x_min, right_joystick_x_max, A12DEG, -A12DEG))))
                 #print(sinRotX, " ", cosRotX)
@@ -454,7 +559,7 @@ def process_gamepad():
             # Right Joystick Y Axis
             elif event.axis == R_STICK_Y_AXIS:
                 R3_y = event.value                
-                translateX = map_input(R3_y, right_joystick_y_min, right_joystick_y_max, 0, 255)
+                translateX = map_input(R3_y, right_joystick_y_max, right_joystick_y_min, 0, 255)
                 if translateX > 127.0:
                     translateX = map_input(translateX, 128.0, 255.0, 0, 2*TRAVEL)
                 else:
@@ -468,28 +573,30 @@ def process_gamepad():
             if event.button == BUTTON_TRIANGLE:
                 mode = 1
                 reset_position = True
-                print(f"Mode: {mode}")
+                # print(f"Mode: {mode}")
 
             if event.button == BUTTON_SQUARE:
                 mode = 2
                 reset_position = True
-                print(f"Mode: {mode}")
+                # print(f"Mode: {mode}")
 
             if event.button == BUTTON_CIRCLE:
                 mode = 3
                 reset_position = True
-                print(f"Mode: {mode}")
+                # print(f"Mode: {mode}")
 
             if event.button == BUTTON_X:
                 mode = 4
                 reset_position = True
-                print(f"Mode: {mode}")
+                #print(f"Mode: {mode}")
 
             if event.button == BUTTON_SHARE:
-                print("BUTTON_SHARE")
+                pass
+                #print("BUTTON_SHARE")
         
             if event.button == PS_BUTTON:
-                print("PS_BUTTON")
+                #print("PS_BUTTON")
+                printInformation()
                 hexapod_start = False
                 clear_PCA9685_boards([board1_address, board2_address])
                 for i in range(nbPCAServo):
@@ -499,66 +606,87 @@ def process_gamepad():
                 
             if event.button == L_STICK_IN or event.button == R_STICK_IN:
                 mode = 5
-                print("Home Position")
+                #print("Home Position")
 
             if event.button == OPTIONS_BUTTON:
-                print("OPTIONS_BUTTON")
+                #print("OPTIONS_BUTTON")
                 if(gait_speed == 0):
                     gait_speed = 1
-                    print(gait_speed)
+                    #print(gait_speed)
                 elif(gait_speed == 1):
                     gait_speed = 2
-                    print(gait_speed)
+                    #print(gait_speed)
                 elif(gait_speed == 2):
                     gait_speed = 0
-                    print(gait_speed)
+                    #print(gait_speed)
 
             if event.button == L2_IN:
                 if step_height_value == 1:
                     step_height_value = 2
                     step_height_multiplier = step_height_value
-                    print("Step Height Value: ", step_height_value)
+                    #print("Step Height Value: ", step_height_value)
                     
                 elif step_height_value == 2:
                     step_height_value = 3
                     step_height_multiplier = step_height_value
-                    print("Step Height Value: ", step_height_value)
+                    #print("Step Height Value: ", step_height_value)
                     
                 elif step_height_value == 3:
                     step_height_value = 4
                     step_height_multiplier = step_height_value
-                    print("Step Height Value: ", step_height_value)
+                    #print("Step Height Value: ", step_height_value)
                 
                 elif step_height_value == 4:
+                    step_height_value = 5
+                    step_height_multiplier = step_height_value
+                    #print("Step Height Value: ", step_height_value)
+                    
+                elif step_height_value == 5:
+                    step_height_value = 6
+                    step_height_multiplier = step_height_value
+                    #print("Step Height Value: ", step_height_value)
+                    
+                elif step_height_value == 6:
+                    step_height_value = 7
+                    step_height_multiplier = step_height_value
+                    #print("Step Height Value: ", step_height_value)
+                    
+                elif step_height_value == 7:
                     step_height_value = 1
                     step_height_multiplier = step_height_value
-                    print("Step Height Value: ", step_height_value)
+                    #print("Step Height Value: ", step_height_value)
                 
             if event.button == R2_IN:
-                print("R2_IN")
+                pass
+                #print("R2_IN")
                 
             # if event.button == L_STICK_IN:
                 # print("L_STICK_IN")
                 
             if event.button == R_STICK_IN:
-                print("R_STICK_IN")
+                pass
+                #print("R_STICK_IN")
                 
             if event.button == L1_IN:
-                print("LEFT_BUMPER")
-                capture_offsets = True
-                
-            if event.button == R1_IN:
-                print("RIGHT_BUMPER")
+                #print("LEFT_BUMPER")
                 for leg_num in range(0, 6):
                     offset_X[leg_num] = 0
                     offset_Y[leg_num] = 0
                     offset_Z[leg_num] = 0
+                offset_check = "OFF"
                 leg1_IK_control = True
                 leg6_IK_control = True
                 step_height_multiplier = step_height_value
                 
+                
+            if event.button == R1_IN:
+                #print("RIGHT_BUMPER")
+                capture_offsets = True
+                offset_check = "ON"
+                
             if event.button == TOUCH_PAD_CLICK_BUTTON:
-                print("TOUCH_PAD_CLICK_BUTTON")
+                pass
+                #print("TOUCH_PAD_CLICK_BUTTON")
 
 # Leg IK Routine
 def leg_IK(leg_number, X, Y, Z):
@@ -720,7 +848,7 @@ def tripod_gait():
 # // Legs move forward one at a time while the other 5 legs provide support
 # //***********************************************************************
 def wave_gait():
-    print("Inside Wave Gait")
+    #print("Inside Wave Gait")
     global commandedX
     global commandedY
     global commandedR
@@ -800,7 +928,7 @@ def wave_gait():
 # // but right side is offset so RR starts midway through the LM stroke
 # //***********************************************************************
 def ripple_gait():
-    print("Inside ripple Gait")
+    #print("Inside ripple Gait")
     global commandedX
     global commandedY
     global commandedR
@@ -880,7 +1008,7 @@ def ripple_gait():
 # // rear and left middle, and finally right middle and left front.
 # //***********************************************************************
 def tetrapod_gait():
-    print("Inside Tetrapod Gait")
+    #print("Inside Tetrapod Gait")
     global commandedX
     global commandedY
     global commandedR
@@ -1025,19 +1153,41 @@ def translate_control():
     global capture_offsets
     global mode
     global temp
+    global movement
 
     # Compute X direction move
     if translateX != 0.0:
+        if(mode == 2):
+            if(translateX > 3):
+                movement = "Translate Y Backward"
+            elif(translateX < -3):
+                movement = "Translate Y Forward"
+            elif(translateX <= 2 and translateX >= -2):
+                movement = "Steady"
         for leg_num in range(0, 6):
             current_X[leg_num] = HOME_X[leg_num] + translateX
 
     # Compute Y direction move
     if translateY != 0.0:
+        if(mode == 2):
+            if(translateY > 3):
+                movement = "Translate X Left"
+            elif(translateY < -3):
+                movement = "Translate X Right"
+            elif(translateY <= 2 and translateY >= -2):
+                movement = "Steady"
         for leg_num in range(0, 6):
             current_Y[leg_num] = HOME_Y[leg_num] + translateY
 
     # Compute Z direction move
     if translateZ != 0.0:
+        if(mode == 2):
+            if(translateZ > 3):
+                movement = "Translate Z Down"
+            elif(translateZ < -3):
+                movement = "Translate Z Up"
+            elif(translateZ <= 2 and translateZ >= -2):
+                movement = "Steady"
         for leg_num in range(0, 6):
             current_Z[leg_num] = HOME_Z[leg_num] + translateZ
 
@@ -1081,6 +1231,7 @@ def rotate_control():
     global offset_Z
     global capture_offsets
     global mode
+    global movement
 
     L_STICK_X_AXIS = 0
     R_STICK_X_AXIS = 3
@@ -1092,6 +1243,23 @@ def rotate_control():
     cosRotY = math.cos((pygame.joystick.Joystick(0).get_axis(R_STICK_Y_AXIS) * (A12DEG / 255.0)) / 3000.0)
     sinRotZ = math.sin((pygame.joystick.Joystick(0).get_axis(L_STICK_X_AXIS) * (A30DEG / 255.0)) / 5000.0)
     cosRotZ = math.cos((pygame.joystick.Joystick(0).get_axis(L_STICK_X_AXIS) * (A30DEG / 255.0)) / 5000.0)
+    #print(f"Sin X: {sinRotX}, Cos X: {cosRotX}, Sin Y: {sinRotY}, Cos Y: {cosRotY}, Sin Z: {sinRotZ}, Cos Z: {cosRotZ}")
+    
+    if(mode == 3):
+        if(sinRotZ >= 0.009):
+            movement = "Rotate Z Clockwise"
+        elif(sinRotZ <= -0.009):
+            movement = "Rotate Z Anti-Clockwise"
+        elif(sinRotY >= 0.009):
+            movement = "Rotate X Down"
+        elif(sinRotY <= -0.009):
+            movement = "Rotate X Up"
+        elif(sinRotX >= 0.009):
+            movement = "Rotate Y Down"
+        elif(sinRotX <= -0.009):
+            movement = "Rotate Y Up"
+        else:
+            movement = "Steady"
 
     for leg_num in range(0, 6):
         totalX = HOME_X[leg_num] + BODY_X[leg_num]
@@ -1208,7 +1376,5 @@ def one_leg_lift():
         step_height_multiplier = 2.0 + ((z_height_right - 2.0) / 3.0)
         capture_offsets = False
 
-
 if __name__ == '__main__':
     initiateHexapod()
-
