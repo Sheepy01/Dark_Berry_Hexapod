@@ -1,14 +1,16 @@
 
+# Libraries
 import curses
 import time
 import math
 import pygame
-from adafruit_servokit import ServoKit
-from adafruit_pca9685 import PCA9685
 import board
 import busio
 import sys
 import os
+from adafruit_servokit import ServoKit
+from adafruit_pca9685 import PCA9685
+from tqdm import tqdm
 
 #CONSTANTS
 COXA1_SERVO  = 0 
@@ -29,25 +31,18 @@ TIBIA5_SERVO = 6
 COXA6_SERVO  = 8
 FEMUR6_SERVO = 9
 TIBIA6_SERVO = 10
-
 RAD_TO_DEG = 57.2957795131
-
 COXA_LENGTH = 51  # leg part lengths
 FEMUR_LENGTH = 65
 TIBIA_LENGTH = 121
-
 TRAVEL = 40
-
 A12DEG = 209440;           # 12 degrees in radians x 1,000,000
 A30DEG = 523599;           # 30 degrees in radians x 1,000,000
-
 FRAME_TIME_MS = 20  # frame time (20msec = 50Hz)
-
 HOME_Z_VALUE = -110
 HOME_X = [82.0, 0.0, -82.0, -82.0, 0.0, 82.0]  # coxa-to-toe home positions
 HOME_Y = [82.0, 116.0, 82.0, -82.0, -116.0, -82.0]
 HOME_Z = [HOME_Z_VALUE, HOME_Z_VALUE, HOME_Z_VALUE, HOME_Z_VALUE, HOME_Z_VALUE, HOME_Z_VALUE]
-
 BODY_X = [110.4, 0.0, -110.4, -110.4, 0.0, 110.4]  # body center-to-coxa servo distances
 BODY_Y = [58.4, 90.8, 58.4, -58.4, -90.8, -58.4]
 BODY_Z = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -254,11 +249,15 @@ def printInformation():
         mode_name = "Rotate Mode"
         
     if(gait_speed == 0):
-        speed = "Fast"
+        speed = "2X"
     elif(gait_speed == 1):
-        speed = "Normal"
+        speed = "1.5X"
     elif(gait_speed == 2):
-        speed = "Slow"
+        speed = "Normal"
+    elif(gait_speed == 3):
+        speed = "-1.5X"
+    elif(gait_speed == 4):
+        speed = "-2X"
         
     if(gait == 0):
         gait_name = "Tripod gait"
@@ -288,7 +287,7 @@ def printInformation():
     
 # Example usage:
     #curses.wrapper(print_continuous_statement, f"Printing continuously... {mode_name}, {gait_name}, {movement}, {step_height}")
-    print(f'''\t\t******MENU******
+    print(f'''\n\n\t\t******MENU******
             1) Mode: {mode_name}
             2) Gait: {gait_name}
             3) Walking Movement: {movement}
@@ -384,11 +383,12 @@ def main():
             #     set_all_90()
 
 def loading_animation():
-    animation_chars = "/-\\|"
-    for i in range(20):  # Adjust the range based on the desired duration
-        sys.stdout.write("\r" + animation_chars[i % len(animation_chars)])
-        sys.stdout.flush()
-        time.sleep(0.1)  # Adjust the sleep duration for the desired speed
+    for i in tqdm (range (101), 
+        desc="Loading…", 
+        ascii=False, ncols=75):
+        time.sleep(0.04)
+	
+    print("Complete.")
 
 def process_gamepad():
     printInformation()
@@ -617,6 +617,12 @@ def process_gamepad():
                     gait_speed = 2
                     #print(gait_speed)
                 elif(gait_speed == 2):
+                    gait_speed = 3
+                    #print(gait_speed)
+                elif(gait_speed == 3):
+                    gait_speed = 4
+                    #print(gait_speed)
+                elif(gait_speed == 4):
                     gait_speed = 0
                     #print(gait_speed)
 
@@ -920,8 +926,6 @@ def wave_gait():
     else:
         tick = 0
 
-
-
 # //***********************************************************************
 # // Ripple Gait
 # // Left legs move forward rear-to-front while right also do the same,
@@ -1085,8 +1089,12 @@ def compute_strides():
     if gait_speed == 0:
         duration = 360
     elif(gait_speed == 1):
+        duration = 540
+    elif(gait_speed == 2):
         duration = 720
-    else:
+    elif(gait_speed == 3):
+        duration = 1440
+    elif(gait_speed == 4):
         duration = 2160
 
 
@@ -1309,72 +1317,75 @@ def read_servo_positions(leg1 = False, leg6 = False, pin_num = None):
 # // also can set z step height using capture offsets
 # //***********************************************************************
 def one_leg_lift():
-    global leg1_coxa
-    global leg1_femur
-    global leg1_tibia
-    global leg6_coxa
-    global leg6_femur
-    global leg6_tibia
-    global leg1_IK_control
-    global leg6_IK_control
-    global temp
-    global z_height_right
-    global z_height_left
-    global step_height_multiplier
+    pass
+    # global leg1_coxa
+    # global leg1_femur
+    # global leg1_tibia
+    # global leg6_coxa
+    # global leg6_femur
+    # global leg6_tibia
+    # global leg1_IK_control
+    # global leg6_IK_control
+    # global temp
+    # global z_height_right
+    # global z_height_left
+    # global step_height_multiplier
 
-    # read current leg 1 servo positions the first time
-    if leg1_IK_control == True:
-        leg1_coxa = read_servo_positions(leg1=True, pin_num=0)
-        leg1_femur = read_servo_positions(leg1=True, pin_num=1)
-        leg1_tibia = read_servo_positions(leg1=True, pin_num=2)
-        leg1_IK_control = False
+    # # read current leg 1 servo positions the first time
+    # if leg1_IK_control == True:
+        # leg1_coxa = read_servo_positions(leg1=True, pin_num=0)
+        # leg1_femur = read_servo_positions(leg1=True, pin_num=1)
+        # leg1_tibia = read_servo_positions(leg1=True, pin_num=2)
+        # leg1_IK_control = False
 
-    # read current leg 1 servo positions the first time
-    # change pin number if required
-    if leg6_IK_control == True:
-        leg6_coxa = read_servo_positions(leg2=True, pin_num=0)
-        leg6_femur = read_servo_positions(leg2=True, pin_num=1)
-        leg6_tibia = read_servo_positions(leg2=True, pin_num=2)
-        leg6_IK_control = False
+    # # read current leg 1 servo positions the first time
+    # # change pin number if required
+    # if leg6_IK_control == True:
+        # leg6_coxa = read_servo_positions(leg2=True, pin_num=0)
+        # leg6_femur = read_servo_positions(leg2=True, pin_num=1)
+        # leg6_tibia = read_servo_positions(leg2=True, pin_num=2)
+        # leg6_IK_control = False
 
-    # process right joystick left/right axis
-    temp = map_input(temp, 0, 255, 45, -45)
-    constrained_coxa1_servo = constrain(int(leg1_coxa + temp), 45, 135)
-    kit1.servo[COXA1_SERVO].angle = constrained_coxa1_servo
+    # # process right joystick left/right axis
+    # temp = map_input(temp, 0, 255, 45, -45)
+    # constrained_coxa1_servo = constrain(int(leg1_coxa + temp), 45, 135)
+    # kit1.servo[COXA1_SERVO].angle = constrained_coxa1_servo
 
-    # process right joystick up/down axis
-    if temp < 117:
-        temp = map_input(temp, 116, 0, 0, 24)
-        constrained_femur1_servo = constrain(int(leg1_femur + temp), 0, 170)
-        kit1.servo[FEMUR1_SERVO].angle = constrained_femur1_servo
-        constrained_tibia1_servo = constrain(int(leg1_tibia + temp), 0, 170)
-        kit1.servo[TIBIA1_SERVO].angle = constrained_tibia1_servo
-    else:
-        z_height_right = constrain(temp, 140, 255)
-        z_height_right = map_input(z_height_right, 140, 255, 1, 8)
+    # # process right joystick up/down axis
+    # if temp < 117:
+        # temp = map_input(temp, 116, 0, 0, 24)
+        # constrained_femur1_servo = constrain(int(leg1_femur + temp), 0, 170)
+        # kit1.servo[FEMUR1_SERVO].angle = constrained_femur1_servo
+        # constrained_tibia1_servo = constrain(int(leg1_tibia + temp), 0, 170)
+        # kit1.servo[TIBIA1_SERVO].angle = constrained_tibia1_servo
+    # else:
+        # z_height_right = constrain(temp, 140, 255)
+        # z_height_right = map_input(z_height_right, 140, 255, 1, 8)
 
-    # Process left joystick left/right axis
-    temp = map_input(temp, 0, 255, 45, -45)
-    constrained_coxa6_servo = constrain(int(leg6_coxa + temp), 45, 135)
-    kit1.servo[COXA6_SERVO].angle = constrained_coxa6_servo
+    # # Process left joystick left/right axis
+    # temp = map_input(temp, 0, 255, 45, -45)
+    # constrained_coxa6_servo = constrain(int(leg6_coxa + temp), 45, 135)
+    # kit1.servo[COXA6_SERVO].angle = constrained_coxa6_servo
 
-    # process right joystick up/down axis
-    if temp < 117:
-        temp = map_input(temp, 116, 0, 0, 24)
-        constrained_femur6_servo = constrain(int(leg6_femur + temp), 0, 170)
-        kit1.servo[FEMUR1_SERVO].angle = constrained_femur6_servo
-        constrained_tibia6_servo = constrain(int(leg6_tibia + temp), 0, 170)
-        kit1.servo[TIBIA6_SERVO].angle = constrained_tibia6_servo
-    else:
-        z_height_left = constrain(temp, 140, 255)
-        z_height_left = map_input(z_height_left, 140, 255, 1, 8)
+    # # process right joystick up/down axis
+    # if temp < 117:
+        # temp = map_input(temp, 116, 0, 0, 24)
+        # constrained_femur6_servo = constrain(int(leg6_femur + temp), 0, 170)
+        # kit1.servo[FEMUR1_SERVO].angle = constrained_femur6_servo
+        # constrained_tibia6_servo = constrain(int(leg6_tibia + temp), 0, 170)
+        # kit1.servo[TIBIA6_SERVO].angle = constrained_tibia6_servo
+    # else:
+        # z_height_left = constrain(temp, 140, 255)
+        # z_height_left = map_input(z_height_left, 140, 255, 1, 8)
     
-    # process z height adjustment
-    if z_height_left > z_height_right:
-        z_height_right = z_height_left
-    if capture_offsets == True:
-        step_height_multiplier = 2.0 + ((z_height_right - 2.0) / 3.0)
-        capture_offsets = False
+    # # process z height adjustment
+    # if z_height_left > z_height_right:
+        # z_height_right = z_height_left
+    # if capture_offsets == True:
+        # step_height_multiplier = 2.0 + ((z_height_right - 2.0) / 3.0)
+        # capture_offsets = False
 
 if __name__ == '__main__':
     initiateHexapod()
+
+
