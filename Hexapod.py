@@ -5,13 +5,10 @@ import math
 import pygame
 import board
 import busio
-import cv2
+import os
 import RPi.GPIO as GPIO
 from adafruit_servokit import ServoKit
 from adafruit_pca9685 import PCA9685
-from picamera2 import Picamera2, Preview
-from libcamera import controls
-from tqdm import tqdm
 
 #CONSTANTS
 COXA1_SERVO  = 0 
@@ -176,26 +173,26 @@ kit3 = None
 board1_address = 0x40
 board2_address = 0x41
 board3_address = 0x42
-picam2 = None
-previewBuild = False
-camera_on = False
+# picam2 = None
+# previewBuild = False
+# camera_on = False
 active_joint = 1
-pic_no = 0
-radius_size = 1
-form_fill = False
-video_res = 1080
-current_video_res = None
-image_captured_count = 0
-video_timer = ""
-total_time_at_radius = 0
-image_video_choice = ""
-font = None
-small_font = None
-title_font = None
-screen = None
-photogrammetry_menu = False
-photogrammetry_start = False
-web_cam = False
+# pic_no = 0
+# radius_size = 1
+# form_fill = False
+# video_res = 1080
+# current_video_res = None
+# image_captured_count = 0
+# video_timer = ""
+# total_time_at_radius = 0
+# image_video_choice = ""
+# font = None
+# small_font = None
+# title_font = None
+# screen = None
+# photogrammetry_menu = False
+# photogrammetry_start = False
+# web_cam = False
 
 # # Open a connection to the webcam (usually device 0, but could be different)
 # cap = cv2.VideoCapture(2)
@@ -247,20 +244,6 @@ def initializePCA9685Boards():
         kit2.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
         kit3.servo[i].set_pulse_width_range(MIN_PULSE, MAX_PULSE)
 
-def initializeCameraModule():
-    global picam2
-    # Camera Module Initialization
-    picam2 = Picamera2()
-    camera_config = picam2.create_still_configuration(
-    main={"size": (1920, 1080)}, 
-    lores={"size": (1920, 1080)}, 
-    display="lores"
-    )
-    video_config = picam2.create_video_configuration()
-    picam2.configure(camera_config)
-    picam2.configure(video_config)
-    picam2.set_controls({"AfMode":controls.AfModeEnum.Continuous})
-
 # INITIALIZATION
 def setup():
     global reset_position
@@ -290,7 +273,7 @@ def setup():
     
     initializePCA9685Boards()
         
-    initializeCameraModule()
+    #initializeCameraModule()
 
     # Initialize the robotic arm to its intial position
     intializeArm(arm_home_angles)
@@ -310,19 +293,8 @@ def setup():
     leg1_IK_control = True
     leg6_IK_control = True
 
-
     pygame.init()
     pygame.joystick.init()
-    # Set up display
-    window_size = (800, 600)
-    screen = pygame.display.set_mode(window_size)
-    pygame.display.set_caption('Hexapod Information Display')
-
-    # Set up fonts
-    font = pygame.font.Font(None, 36)
-    small_font = pygame.font.Font(None, 24) 
-    title_font = pygame.font.Font(None, 48)
-
         
     if(pygame.joystick.get_count() == 0):
         print("No controller connected!")
@@ -345,150 +317,137 @@ def setup():
     else:
         print("Controller not found")
 
-def draw_text(screen, text, pos, font, color=(255, 255, 255)):
-    if not isinstance(text, str):
-        text = str(text)
-    text_surface = font.render(text, True, color)
-    screen.blit(text_surface, pos)
-
-def print_continuous_statement(window, statement):
-    height, width = window.getmaxyx()
-    x = 0
-    window.clear()
-    window.addstr(height // 2, max((width - len(statement)) // 2, 0), statement)
-    window.refresh()
-    x = (x + 1) % width
-
-def determine_display_info():
-    global pic_no, radius_size, form_fill, video_res, image_captured_count, current_video_res, video_timer, total_time_at_radius, image_video_choice
-    global hexapodMode, armMode, photogrammetry_mode, photogrammetry_menu, mode, gait_speed, gait, step_height_value, camera_on, active_joint, current_arm_theta
-    global movement, offset_check, total_time_at_radius
-
-    info = {
-        "mode_name": "",
-        "speed": "",
-        "step_height": "",
-        "gait_name": "",
-        "camera_on_off": "",
-        "arm_gripper_open_close": "",
-        "active_joint_name": ""
-    }
-    
-    if mode == 1:
-        info["mode_name"] = "Walking Mode"
-    elif mode == 2:
-        info["mode_name"] = "Translate Mode"
-    elif mode == 3:
-        info["mode_name"] = "Rotate Mode"
-        
-    if gait_speed == 0:
-        info["speed"] = "2X"
-    elif gait_speed == 1:
-        info["speed"] = "1.5X"
-    elif gait_speed == 2:
-        info["speed"] = "Normal"
-    elif gait_speed == 3:
-        info["speed"] = "-1.5X"
-    elif gait_speed == 4:
-        info["speed"] = "-2X"
-        
-    if gait == 0:
-        info["gait_name"] = "Tripod gait"
-    elif gait == 1:
-        info["gait_name"] = "Wave gait"
-    elif gait == 2:
-        info["gait_name"] = "Ripple gait"
-    elif gait == 3:
-        info["gait_name"] = "Tetrapod gait"
-        
-    if step_height_value == 1:
-        info["step_height"] = "1"
-    elif step_height_value == 2:
-        info["step_height"] = "2"
-    elif step_height_value == 3:
-        info["step_height"] = "3"
-    elif step_height_value == 4:
-        info["step_height"] = "4"
-    elif step_height_value == 5:
-        info["step_height"] = "5"
-    elif step_height_value == 6:
-        info["step_height"] = "6"
-    elif step_height_value == 7:
-        info["step_height"] = "7"
-    
-    if camera_on:
-        info["camera_on_off"] = "ON"
-    else:
-        info["camera_on_off"] = "OFF"
-        
-    if active_joint == 1:
-        info["active_joint_name"] = "SHOULDER"
-    elif active_joint == 2:
-        info["active_joint_name"] = "ELBOW"
-    elif active_joint == 3:
-        info["active_joint_name"] = "WRIST 1"
-        
-    if current_arm_theta[-1] > 50:
-        info["arm_gripper_open_close"] = "Open"
-    elif current_arm_theta[-1] < 20:
-        info["arm_gripper_open_close"] = "Closed"
-    else:
-        info["arm_gripper_open_close"] = "Middle"
-
-    return info
-
-def printInformation(screen, font, small_font, info, hexapodMode, armMode, movement, offset_check):
-    global total_time_at_radius
-    global photogrammetry_menu
-    global photogrammetry_menu
-    global image_video_choice
-    global form_fill
+def printInformation():
     global pic_no
     global radius_size
-    # global photogrammetry_start
-    padding = 10
-    margin = 20
-    y_offset = margin
+    global video_res
+    global image_captured_count
+    global current_video_res
+    global video_timer
+    global total_time_at_radius
+    global image_video_choice
 
-    if hexapodMode:
-        draw_text(screen, "******HEXAPOD MENU******", (margin, y_offset), title_font)
-        y_offset += 50
-        draw_text(screen, f"Mode: {info['mode_name']}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Gait: {info['gait_name']}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Walking Movement: {movement}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Gait Speed: {info['speed']}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Step Height: {info['step_height']}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Offsets: {offset_check}", (margin, y_offset), font)
+    mode_name = ""
+    speed = ""
+    step_height = ""
+    gait_name = ""
+    step_height = ""
+    camera_on_off = ""
+    arm_gripper_open_close = ""
+    active_joint_name = ""
+    
+    if(mode == 1):
+        mode_name = "Walking Mode"
+    elif(mode == 2):
+        mode_name = "Translate Mode"
+    elif(mode == 3):
+        mode_name = "Rotate Mode"
         
-    elif armMode and not photogrammetry_mode:
-        draw_text(screen, "******[HEXAPOD+ARM] MENU******", (margin, y_offset), title_font)
-        y_offset += 50
-        draw_text(screen, '"ARM":', (margin, y_offset), title_font)
-        y_offset += 40
-        draw_text(screen, f"Active Joint: {info['active_joint_name']}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Joint Angles: {current_arm_theta}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Camera: {info['camera_on_off']}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Arm Gripper: {info['arm_gripper_open_close']}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, '"HEXAPOD":', (margin, y_offset), title_font)
-        y_offset += 40
-        draw_text(screen, f"Mode: {info['mode_name']}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Gait: {info['gait_name']}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Walking Movement: {movement}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Gait Speed: {info['speed']}", (margin, y_offset), font)
-        y_offset += 40
-        draw_text(screen, f"Step Height: {info['step_height']}", (margin, y_offset), font)
+    if(gait_speed == 0):
+        speed = "2X"
+    elif(gait_speed == 1):
+        speed = "1.5X"
+    elif(gait_speed == 2):
+        speed = "Normal"
+    elif(gait_speed == 3):
+        speed = "-1.5X"
+    elif(gait_speed == 4):
+        speed = "-2X"
+        
+    if(gait == 0):
+        gait_name = "Tripod gait"
+    elif(gait == 1):
+        gait_name = "Wave gait"
+    elif(gait == 2):
+        gait_name = "Ripple gait"
+    elif(gait == 3):
+        gait_name = "Tetrapod gait"
+        
+    if(step_height_value == 1):
+        step_height = "1"
+    elif(step_height_value == 2):
+        step_height = "2"
+    elif(step_height_value == 3):
+        step_height = "3"
+    elif(step_height_value == 4):
+        step_height = "4"
+    elif(step_height_value == 5):
+        step_height = "5"
+    elif(step_height_value == 6):
+        step_height = "6"
+    elif(step_height_value == 7):
+        step_height = "7"
+    
+    if camera_on == True:
+        camera_on_off = "ON"
+    else:
+        camera_on_off = "OFF"
+        
+    if active_joint == 1:
+        active_joint_name = "SHOULDER"
+    if active_joint == 2:
+        active_joint_name = "ELBOW"
+    if active_joint == 3:
+        active_joint_name = "WRIST 1"
+        
+    if current_arm_theta[len(current_arm_theta) - 1] > 50:
+        arm_gripper_open_close = "Open"
+    elif current_arm_theta[len(current_arm_theta) - 1] < 20:
+        arm_gripper_open_close = "Closed"
+    else:
+        arm_gripper_open_close = "Middle"
+        
+    os.system('clear')
+    
+    if hexapodMode == True:
+        print(f'''
+                  :%@%-        .*@@=      
+                    +@%*      =%@*.       
+                      .*@*--=%%:.         
+                        =@#%%*            
+                ....    -@#%%*    ....    
+              +@@@@#%#@@@@@@@@@@%##@@@@*: 
+                ....    =@#%%*    ....    
+                        =@*%%*            
+                      .*@*--+@%:          
+                    =@%*      =%@*.       
+                  :%@%-        :#@@=      
+                  :=:            .=- 
+                \n\n\t\t******HEXAPOD MENU******
+                1) Mode: {mode_name}
+                2) Gait: {gait_name}
+                3) Walking Movement: {movement}
+                4) Gait Speed: {speed}
+                5) Step Height: {step_height}
+                6) Offsets: {offset_check}''')
+                
+    elif armMode == True and photogrammetry_mode == False:
+        print(f'''
+                  :%@%-        .*@@=      
+                    +@%*      =%@*.       
+                      .*@*--=%%:.         
+                        =@#%%*            
+                ....    -@#%%*    ....    
+              +@@@@#%#@@@@@@@@@@%##@@@@*: 
+                ....    =@#%%*    ....    
+                        =@*%%*            
+                      .*@*--+@%:          
+                    =@%*      =%@*.       
+                  :%@%-        :#@@=      
+                  :=:            .=- 
+                \n\n\t\t******[HEXAPOD+ARM] MENU******
+                "ARM":
+                1) Active Joint: {active_joint_name}
+                2) Joint Angles: {current_arm_theta}
+                3) Camera: {camera_on_off}
+                4) Arm Gripper: {arm_gripper_open_close}
+                
+                "HEXAPOD":
+                1) Mode: {mode_name}
+                2) Gait: {gait_name}
+                3) Walking Movement: {movement}
+                4) Gait Speed: {speed}
+                5) Step Height: {step_height}''')
     elif photogrammetry_mode == True and armMode == True:
         if photogrammetry_menu == False:
             if form_fill == False:
@@ -503,225 +462,24 @@ def printInformation(screen, font, small_font, info, hexapodMode, armMode, movem
                     2) Medium (2 metre)
                     3) Large (3 metre)
                     Choose 1, 2, or 3: '''))
-                form_fill = True
                 if radius_size == 1:
                     total_time_at_radius = 60000 # in milliseconds
                 elif radius_size == 2:
                     total_time_at_radius = 120000
                 elif radius_size == 3:
                     total_time_at_radius = 240000
+                form_fill = True
             elif form_fill == True:
                 if pic_no != 1 and 1 <= radius_size <= 3:
-                    print("")
-                    # print(f'''Place the hexapod at approx {radius_size} metre from the target object
-                    #       Enter triangle to start series image capturing''')
+                    print(f'''Place the hexapod at approx {radius_size} metre from the target object
+                          Enter triangle to start series image capturing''')
         elif photogrammetry_menu == True:
             if image_video_choice.upper() == 'I':
                 print(f"Number of images captured: {image_captured_count}")
             elif image_video_choice.upper() == 'V':
                 print(f'''Current video resolution: {current_video_res}
-                    Video duration: {video_timer}''')   
-    # elif photogrammetry_mode and armMode:
-    #     if not photogrammetry_menu:
-    #         if not form_fill:
-    #             draw_text(screen, "Enter 'i' for image capture and 'v' for video capture: ", (margin, y_offset), small_font)
-    #             image_video_choice = input("Enter 'i' for image capture and 'v' for video capture: ")
-    #             if image_video_choice.upper() == 'I':
-    #                 pic_no = int(input("Enter the number of pictures to capture: "))
-    #             elif image_video_choice.upper() == 'V':
-    #                 video_res = int(input("Enter 360 or 480 or 720 or 1080: "))
-    #                 current_video_res = video_res
-    #             radius_size = int(input('''Choose any of the radius size:
-    #                 1) Small (1 metre)
-    #                 2) Medium (2 metre)
-    #                 3) Large (3 metre)
-    #                 Choose 1, 2, or 3: '''))
-    #             if radius_size == 1:
-    #                 total_time_at_radius = 60000  # in milliseconds
-    #             elif radius_size == 2:
-    #                 total_time_at_radius = 120000
-    #             elif radius_size == 3:
-    #                 total_time_at_radius = 240000
-    #             form_fill = True
-    #         else:
-    #             if pic_no != 1 and 1 <= radius_size <= 3:
-    #                 draw_text(screen, f"Place the hexapod at approx {radius_size} metre from the target object", (margin, y_offset), small_font)
-    #                 y_offset += 40
-    #                 draw_text(screen, "Enter triangle to start series image capturing", (margin, y_offset), small_font)
-    #     else:
-    #         if image_video_choice.upper() == 'I':
-    #             draw_text(screen, f"Number of images captured: {image_captured_count}", (margin, y_offset), small_font)
-    #         elif image_video_choice.upper() == 'V':
-    #             draw_text(screen, f"Current video resolution: {current_video_res}", (margin, y_offset), small_font)
-    #             y_offset += 40
-    #             draw_text(screen, f"Video duration: {video_timer}", (margin, y_offset), small_font)
-    # text = str(text)
-    # text_surface = font.render(text, True, (255, 255, 255))
-    # screen.blit(text_surface, pos)
-    # global pic_no
-    # global radius_size
-    # global video_res
-    # global image_captured_count
-    # global current_video_res
-    # global video_timer
-    # global total_time_at_radius
-    # global image_video_choice
-
-    # mode_name = ""
-    # speed = ""
-    # step_height = ""
-    # gait_name = ""
-    # step_height = ""
-    # camera_on_off = ""
-    # arm_gripper_open_close = ""
-    # active_joint_name = ""
-    
-    # if(mode == 1):
-    #     mode_name = "Walking Mode"
-    # elif(mode == 2):
-    #     mode_name = "Translate Mode"
-    # elif(mode == 3):
-    #     mode_name = "Rotate Mode"
+                    Video duration: {video_timer}''')
         
-    # if(gait_speed == 0):
-    #     speed = "2X"
-    # elif(gait_speed == 1):
-    #     speed = "1.5X"
-    # elif(gait_speed == 2):
-    #     speed = "Normal"
-    # elif(gait_speed == 3):
-    #     speed = "-1.5X"
-    # elif(gait_speed == 4):
-    #     speed = "-2X"
-        
-    # if(gait == 0):
-    #     gait_name = "Tripod gait"
-    # elif(gait == 1):
-    #     gait_name = "Wave gait"
-    # elif(gait == 2):
-    #     gait_name = "Ripple gait"
-    # elif(gait == 3):
-    #     gait_name = "Tetrapod gait"
-        
-    # if(step_height_value == 1):
-    #     step_height = "1"
-    # elif(step_height_value == 2):
-    #     step_height = "2"
-    # elif(step_height_value == 3):
-    #     step_height = "3"
-    # elif(step_height_value == 4):
-    #     step_height = "4"
-    # elif(step_height_value == 5):
-    #     step_height = "5"
-    # elif(step_height_value == 6):
-    #     step_height = "6"
-    # elif(step_height_value == 7):
-    #     step_height = "7"
-    
-    # if camera_on == True:
-    #     camera_on_off = "ON"
-    # else:
-    #     camera_on_off = "OFF"
-        
-    # if active_joint == 1:
-    #     active_joint_name = "SHOULDER"
-    # if active_joint == 2:
-    #     active_joint_name = "ELBOW"
-    # if active_joint == 3:
-    #     active_joint_name = "WRIST 1"
-        
-    # if current_arm_theta[len(current_arm_theta) - 1] > 50:
-    #     arm_gripper_open_close = "Open"
-    # elif current_arm_theta[len(current_arm_theta) - 1] < 20:
-    #     arm_gripper_open_close = "Closed"
-    # else:
-    #     arm_gripper_open_close = "Middle"
-        
-    # os.system('clear')
-    
-    # if hexapodMode == True:
-    #     print(f'''
-    #               :%@%-        .*@@=      
-    #                 +@%*      =%@*.       
-    #                   .*@*--=%%:.         
-    #                     =@#%%*            
-    #             ....    -@#%%*    ....    
-    #           +@@@@#%#@@@@@@@@@@%##@@@@*: 
-    #             ....    =@#%%*    ....    
-    #                     =@*%%*            
-    #                   .*@*--+@%:          
-    #                 =@%*      =%@*.       
-    #               :%@%-        :#@@=      
-    #               :=:            .=- 
-    #             \n\n\t\t******HEXAPOD MENU******
-    #             1) Mode: {mode_name}
-    #             2) Gait: {gait_name}
-    #             3) Walking Movement: {movement}
-    #             4) Gait Speed: {speed}
-    #             5) Step Height: {step_height}
-    #             6) Offsets: {offset_check}''')
-                
-    # elif armMode == True and photogrammetry_mode == False:
-    #     print(f'''
-    #               :%@%-        .*@@=      
-    #                 +@%*      =%@*.       
-    #                   .*@*--=%%:.         
-    #                     =@#%%*            
-    #             ....    -@#%%*    ....    
-    #           +@@@@#%#@@@@@@@@@@%##@@@@*: 
-    #             ....    =@#%%*    ....    
-    #                     =@*%%*            
-    #                   .*@*--+@%:          
-    #                 =@%*      =%@*.       
-    #               :%@%-        :#@@=      
-    #               :=:            .=- 
-    #             \n\n\t\t******[HEXAPOD+ARM] MENU******
-    #             "ARM":
-    #             1) Active Joint: {active_joint_name}
-    #             2) Joint Angles: {current_arm_theta}
-    #             3) Camera: {camera_on_off}
-    #             4) Arm Gripper: {arm_gripper_open_close}
-                
-    #             "HEXAPOD":
-    #             1) Mode: {mode_name}
-    #             2) Gait: {gait_name}
-    #             3) Walking Movement: {movement}
-    #             4) Gait Speed: {speed}
-    #             5) Step Height: {step_height}''')
-    # elif photogrammetry_mode == True and armMode == True:
-    #     if photogrammetry_menu == False:
-    #         if form_fill == False:
-    #             image_video_choice = input("Enter 'i' for image capture and 'v' for video capture: ")
-    #             if image_video_choice.upper() == 'I':
-    #                 pic_no = int(input("Enter the number of pictures to capture: "))
-    #             elif image_video_choice.upper() == 'V':
-    #                 video_res = int(input("Enter 360 or 480 or 720 or 1080: "))
-    #                 current_video_res = video_res
-    #             radius_size = int(input('''Choose any of the radius size:
-    #                 1) Small (1 metre)
-    #                 2) Medium (2 metre)
-    #                 3) Large (3 metre)
-    #                 Choose 1, 2, or 3: '''))
-    #             if radius_size == 1:
-    #                 total_time_at_radius = 60000 # in milliseconds
-    #             elif radius_size == 2:
-    #                 total_time_at_radius = 120000
-    #             elif radius_size == 3:
-    #                 total_time_at_radius = 240000
-    #             form_fill = True
-    #         elif form_fill == True:
-    #             if pic_no != 1 and 1 <= radius_size <= 3:
-    #                 print(f'''Place the hexapod at approx {radius_size} metre from the target object
-    #                       Enter triangle to start series image capturing''')
-    #     elif photogrammetry_menu == True:
-    #         if image_video_choice.upper() == 'I':
-    #             print(f"Number of images captured: {image_captured_count}")
-    #         elif image_video_choice.upper() == 'V':
-    #             print(f'''Current video resolution: {current_video_res}
-    #                 Video duration: {video_timer}''')
-        
-
-
 def hexapodButtonStart(controller):
     global hexapod_start
     global hexapodMode
@@ -745,19 +503,6 @@ def initiateHexapod():
     #INTIALIZATION
     controller = setup()
     hexapodButtonStart(controller)
-
-def startWebCam():
-    global cv2
-    ret, frame = cap.read()
-    if not ret:
-        print("Error: Could not read frame")
-        exit()
-    cv2.imshow('Webcam Feed', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        exit()
-
-def stopWebCam():
-    print("Stopped")
 
 def main():
     while hexapod_start:
@@ -784,13 +529,6 @@ def main():
         currentTime = int(round(time.time() *1000))  # in milliseconds
         if currentTime - previousTime > FRAME_TIME_MS:
             previousTime = currentTime
-            screen.fill((0, 0, 0))
-            # Read controller and process inputs
-            process_gamepad()
-            if web_cam:
-                startWebCam()
-            elif not web_cam:
-                stopWebCam()
             # Reset legs to home position when commanded
             if reset_position:
                 for leg_num in range(6):
@@ -825,54 +563,11 @@ def main():
                 rotate_control()
             elif mode == 4:
                 arm_control()
-            elif mode == 5:
-                photogrammetryControl()
-
-        # Clear the screen
-        screen.fill((0, 0, 0))
-        
-        # Update the global variables
-        # Here you would update your global variables with the actual robot data
-        
-        # Determine display information based on modes
-        info = determine_display_info()
         
         # Print the information
-        printInformation(screen, font, small_font, info, hexapodMode, armMode, movement, offset_check)
-        
-        # Update the display
-        pygame.display.flip()
-
-def loading_animation():
-    for i in tqdm (range (101), 
-        desc="DarkBerry Loadingâ€¦", 
-        ascii=False, ncols=75):
-        time.sleep(0.04)
-    
-    print('''         --                  .-:        
-        +#@%+              -#@@+:       
-         :@@@@+          -%@@@+         
-           =%%%*        -%%%*.          
-             .-%@#:  .+@@+..            
-               .*@@@@@@%-               
-                 @*=%-@=                
-      .....     :@@%@%@*      .....     
-  .+@@@@@@###%@@@@@@@@@@@@@%#%%@@@@@++  
-   :==++++=..:--*@@@@@@%---:.-=+++==::  
-                 @#+%=@=                
-                :@%%@#@*                
-               *@@*==+@@%:              
-           .+*%%-.     -*@**:           
-          +@@@#:         +@@@#:         
-        :%@@%-            :#@@@=        
-        -+*:                 +*=.  ''')
-	
-    print("Complete.")
+        printInformation()
 
 def process_gamepad():
-    #printInformation()
-    #GLOBALS
-    #global commanded_arm_y
     global mode
     global gait
     global reset_position
@@ -1101,12 +796,7 @@ def process_gamepad():
                     exit()
                     
                 if event.button == L_STICK_IN or event.button == R_STICK_IN:
-                    if web_cam == False:
-                        web_cam = True
-                    elif web_cam == True:
-                        web_cam = False
-
-                    #print("Home Position")
+                    pass
 
                 if event.button == OPTIONS_BUTTON:
                     #print("OPTIONS_BUTTON")
@@ -1284,14 +974,7 @@ def process_gamepad():
                         mode = 5
 
                 if event.button == BUTTON_SQUARE:
-                    if camera_on == True:
-						# Capture an image
-                        image = picam2.capture_array()
-						# Save the image to a file
-                        from PIL import Image
-                        image = Image.fromarray(image)
-                        image.save("captured_image.jpg")
-                        print("Image Captured")
+                    pass
 
                 if event.button == BUTTON_CIRCLE:
                     pass
@@ -1371,63 +1054,6 @@ def setJoystickValues(time_division):
     commandedY = 0
     commandedR = 0
     mode = 5
-
-def captureImage():
-    from PIL import Image
-    picam2.start()
-    image = picam2.capture_array()
-    image = Image.fromarray(image)
-    if image.mode == 'RGBA':
-        image = image.convert('RGB')
-    filename = f"captured_image_{image_captured_count}.jpg"
-    image.save(filename)
-    print(f"Image Captured: {filename}")
-    picam2.stop()
-
-def captureVideo(total_time):
-    picam2.start()
-    picam2.start_recording('test_video.h264')
-    time.sleep(total_time)
-    picam2.stop_recording()
-    picam2.stop()
-    
-image_captured_count = 0
-image_capture_time = 5000
-total_time_image_capture = image_capture_time * pic_no + total_time_at_radius
-
-def photogrammetryControl():
-    global mode
-    global image_captured_count
-    # print("PERFORMING PHOTOGRAMMETRY")
-    if image_video_choice.upper() == 'I':
-        print("IMAGE")
-        time_div = total_time_at_radius / pic_no
-        captureImage()
-        for x in range(pic_no):
-            setJoystickValues(time_div)
-            time.sleep(5000)
-            captureImage()
-            print("Image Captured")
-            image_captured_count += 1
-            time.sleep(1000)
-    elif image_video_choice == 'V':
-        pass
-        # captureVideo(total_time_at_radius) 
-
-def camera_control():
-    global previewBuild
-    global camera_on
-    
-    if camera_on == True:
-        if previewBuild == False:
-            picam2.start_preview(Preview.QTGL)
-            previewBuild = True
-        picam2.start()
-    elif camera_on == False and previewBuild == True:
-        camera_on = False
-        previewBuild = False
-        if previewBuild == False:
-            picam2.stop_preview()
     
 def arm_control():
     if gait == 0:
@@ -1438,22 +1064,11 @@ def arm_control():
         ripple_gait()
     elif gait == 3:
         tetrapod_gait()
-    camera_control()
     setArmServoPosition(current_arm_theta)
 
 def armGripperRotate(commanded_arm_gripper_rotate_x):
     global current_arm_theta
     current_arm_theta[4] = commanded_arm_gripper_rotate_x
-
-# def armExpand(commanded_arm_y):
-    # global current_arm_theta
-    # current_arm_theta[1] = commanded_arm_y
-    # current_arm_theta[2] = map_input(commanded_arm_y, 0, 180, final_arm_theta[2], 70)
-    # current_arm_theta[3] = map_input(commanded_arm_y, 0, 180, final_arm_theta[3], 175)
-    
-# def armRotate(commanded_arm_R):
-    # global current_arm_theta
-    # current_arm_theta[0] = commanded_arm_R
 
 def clampAngle(angle):
 	return max(min(angle, 180), 0)
@@ -2115,90 +1730,6 @@ def rotate_control():
     if capture_offsets == True:
         capture_offsets = False
         mode = 0
-    
-
-# Function to read and print current servo positions
-def read_servo_positions(leg1 = False, leg6 = False, pin_num = None):
-    if leg1 == True:
-        #change to kit1
-        servo_angle = kit1.servo[pin_num].angle
-    if leg6 == True:
-        #change to kit2
-        servo_angle = kit2.servo[pin_num].angle
-    return servo_angle
-
-# //***********************************************************************
-# // One leg lift mode
-# // also can set z step height using capture offsets
-# //***********************************************************************
-def one_leg_lift():
-    pass
-    # global leg1_coxa
-    # global leg1_femur
-    # global leg1_tibia
-    # global leg6_coxa
-    # global leg6_femur
-    # global leg6_tibia
-    # global leg1_IK_control
-    # global leg6_IK_control
-    # global temp
-    # global z_height_right
-    # global z_height_left
-    # global step_height_multiplier
-
-    # # read current leg 1 servo positions the first time
-    # if leg1_IK_control == True:
-        # leg1_coxa = read_servo_positions(leg1=True, pin_num=0)
-        # leg1_femur = read_servo_positions(leg1=True, pin_num=1)
-        # leg1_tibia = read_servo_positions(leg1=True, pin_num=2)
-        # leg1_IK_control = False
-
-    # # read current leg 1 servo positions the first time
-    # # change pin number if required
-    # if leg6_IK_control == True:
-        # leg6_coxa = read_servo_positions(leg2=True, pin_num=0)
-        # leg6_femur = read_servo_positions(leg2=True, pin_num=1)
-        # leg6_tibia = read_servo_positions(leg2=True, pin_num=2)
-        # leg6_IK_control = False
-
-    # # process right joystick left/right axis
-    # temp = map_input(temp, 0, 255, 45, -45)
-    # constrained_coxa1_servo = constrain(int(leg1_coxa + temp), 45, 135)
-    # kit1.servo[COXA1_SERVO].angle = constrained_coxa1_servo
-
-    # # process right joystick up/down axis
-    # if temp < 117:
-        # temp = map_input(temp, 116, 0, 0, 24)
-        # constrained_femur1_servo = constrain(int(leg1_femur + temp), 0, 170)
-        # kit1.servo[FEMUR1_SERVO].angle = constrained_femur1_servo
-        # constrained_tibia1_servo = constrain(int(leg1_tibia + temp), 0, 170)
-        # kit1.servo[TIBIA1_SERVO].angle = constrained_tibia1_servo
-    # else:
-        # z_height_right = constrain(temp, 140, 255)
-        # z_height_right = map_input(z_height_right, 140, 255, 1, 8)
-
-    # # Process left joystick left/right axis
-    # temp = map_input(temp, 0, 255, 45, -45)
-    # constrained_coxa6_servo = constrain(int(leg6_coxa + temp), 45, 135)
-    # kit1.servo[COXA6_SERVO].angle = constrained_coxa6_servo
-
-    # # process right joystick up/down axis
-    # if temp < 117:
-        # temp = map_input(temp, 116, 0, 0, 24)
-        # constrained_femur6_servo = constrain(int(leg6_femur + temp), 0, 170)
-        # kit1.servo[FEMUR1_SERVO].angle = constrained_femur6_servo
-        # constrained_tibia6_servo = constrain(int(leg6_tibia + temp), 0, 170)
-        # kit1.servo[TIBIA6_SERVO].angle = constrained_tibia6_servo
-    # else:
-        # z_height_left = constrain(temp, 140, 255)
-        # z_height_left = map_input(z_height_left, 140, 255, 1, 8)
-    
-    # # process z height adjustment
-    # if z_height_left > z_height_right:
-        # z_height_right = z_height_left
-    # if capture_offsets == True:
-        # step_height_multiplier = 2.0 + ((z_height_right - 2.0) / 3.0)
-        # capture_offsets = False
 
 if __name__ == '__main__':
     initiateHexapod()
